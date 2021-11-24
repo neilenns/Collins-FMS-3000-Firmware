@@ -138,20 +138,21 @@ void OnGetInfo()
  */
 void OnGetConfig()
 {
+  auto i = 0;
   char singleModule[20] = "";
 
   cmdMessenger.sendCmdStart(kInfo);
   cmdMessenger.sendFieldSeparator();
 
   // Send configuration for all 69 buttons.
-  for (auto i = 0; i < 69; i++)
+  for (i = 0; i < 69; i++)
   {
     snprintf(singleModule, 20, "%i.%i.%s:", MFDevice::kTypeButton, i, pinNames[i]);
     cmdMessenger.sendArg(singleModule);
   }
 
   // Send configuration for a single output that's used to control LED brightness
-  snprintf(singleModule, 20, "%i.69.Brightness:", MFDevice::kTypeOutput);
+  snprintf(singleModule, 20, "%i.%i.Brightness:", MFDevice::kTypeOutput, i++);
   cmdMessenger.sendArg(singleModule);
 
   cmdMessenger.sendCmdEnd();

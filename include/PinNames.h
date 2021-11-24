@@ -1,6 +1,6 @@
 #pragma once
 
-const char pinNames[69][5] = {
+const char *const pinNames[] = {
     "LSK1",
     "LSK2",
     "LSK3",
