@@ -24,9 +24,6 @@ const uint8_t MEM_LEN_NAME = 48;
 const uint8_t MEM_OFFSET_SERIAL = MEM_OFFSET_NAME + MEM_LEN_NAME;
 const uint8_t MEM_LEN_SERIAL = 11;
 
-uint32_t lastAnalogAverage = 0;
-uint32_t lastAnalogRead = 0;
-
 const char type[sizeof(MOBIFLIGHT_TYPE)] = MOBIFLIGHT_TYPE;
 char serial[MEM_LEN_SERIAL] = MOBIFLIGHT_SERIAL;
 char name[MEM_LEN_NAME] = MOBIFLIGHT_NAME;
@@ -93,9 +90,6 @@ void setup()
   cmdMessenger.printLfCr();
 
   OnResetBoard();
-  // Time Gap between Inputs, do not read at the same loop
-  lastAnalogAverage = millis() + 4;
-  lastAnalogRead = millis() + 4;
 }
 
 void generateSerial(bool force)
