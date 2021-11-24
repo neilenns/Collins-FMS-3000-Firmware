@@ -21,16 +21,22 @@ constexpr char type[sizeof(MOBIFLIGHT_TYPE)] = MOBIFLIGHT_TYPE;
 char serial[MEM_LEN_SERIAL] = MOBIFLIGHT_SERIAL;
 char name[sizeof(MOBIFLIGHT_NAME)] = MOBIFLIGHT_NAME;
 
-constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // I2C address of the MCP23017 IC that reads rows
-constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // I2C address of the MCP23017 IC that reads columns
-constexpr uint8_t INTA_PIN = 2;              // Row interrupts pin
-constexpr uint8_t SDB_PIN = 4;               // Arduino pin connected to SDB on the LED driver.
-constexpr uint8_t INTB_PIN = 7;              // Arduino pin connected to to INTB on the LED driver.
+// I2C Addresses for the row and column IO expanders.
+constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // Row MCP23017
+constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // Column MCP23017
+
+// Arduino pin mappings
+constexpr uint8_t ROW_INTA_PIN = 2; // Row interrupts pin
+constexpr uint8_t LED_SDB_PIN = 4;  // Arduino pin connected to SDB on the LED driver. Blue jumper wire.
+constexpr uint8_t LED_INTB_PIN = 3; // Arduino pin connected to to INTB on the LED driver.
+
+// Virtual pins for one-off MobiFlight "modules"
+constexpr uint8_t BRIGHTNESS_PIN = 69;
 
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
-KeyboardMatrix keyboardMatrix(ROW_I2C_ADDRESS, COLUMN_I2C_ADDRESS, INTA_PIN, OnKeyboardEvent, OnButtonPress);
-LEDMatrix ledMatrix(ADDR::GND, ADDR::GND, SDB_PIN, INTB_PIN, OnLEDEvent);
+KeyboardMatrix keyboardMatrix(ROW_I2C_ADDRESS, COLUMN_I2C_ADDRESS, ROW_INTA_PIN, OnKeyboardEvent, OnButtonPress);
+LEDMatrix ledMatrix(ADDR::GND, ADDR::GND, LED_SDB_PIN, LED_INTB_PIN, OnLEDEvent);
 
 /**
  * @brief Registers callbacks for all supported MobiFlight commands.
@@ -202,7 +208,7 @@ void OnGetConfig()
   }
 
   // Send configuration for a single output that's used to control LED brightness
-  snprintf(singleModule, 20, "%i.%i.Brightness:", MFDevice::kTypeOutput, i++);
+  snprintf(singleModule, 20, "%i.%i.Brightness:", MFDevice::kTypeOutput, BRIGHTNESS_PIN);
   cmdMessenger.sendArg(singleModule);
 
   cmdMessenger.sendCmdEnd();
@@ -214,8 +220,13 @@ void OnSetPin()
   // Read led state argument, interpret string as boolean
   int pin = cmdMessenger.readInt16Arg();
   int state = cmdMessenger.readInt16Arg();
-  // Set led
-  analogWrite(pin, state);
+
+  // The brightness virtual pin is 69
+  if (pin == BRIGHTNESS_PIN)
+  {
+    cmdMessenger.sendCmd(kStatus, "OK");
+    ledMatrix.SetBrightness(state);
+  }
 }
 
 void OnGenNewSerial()
@@ -248,6 +259,7 @@ void setup()
 {
   MFeeprom.init();
   Wire.begin();
+  Wire.setClock(400000);
   Serial.begin(115200);
 
   while (!Serial)
@@ -270,7 +282,6 @@ void setup()
  */
 void loop()
 {
-  // Process incoming serial data, and perform callbacks
   cmdMessenger.feedinSerialData();
   keyboardMatrix.Loop();
   ledMatrix.Loop();

@@ -6,11 +6,6 @@
 
 using namespace IS31FL3733;
 
-// Arduino pin for the SDB line which is set high to enable the IS31FL3733 chip.
-const uint8_t SDB_PIN = 4;
-// Arduino pin for the IS13FL3733 interrupt pin.
-const uint8_t INTB_PIN = 7;
-
 // Function prototypes for the read and write functions defined later in the file.
 uint8_t i2c_read_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *buffer, uint8_t length);
 uint8_t i2c_write_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *buffer, uint8_t count);
@@ -68,11 +63,23 @@ LEDMatrix::LEDMatrix(ADDR addr1, ADDR addr2, uint8_t sdbPin, uint8_t intbPin, LE
 {
   driver = new IS31FL3733Driver(addr1, addr2, &i2c_read_reg, &i2c_write_reg);
   _eventHandler = eventHandler;
+  _sdbPin = sdbPin;
+  _intbPin = intbPin;
 }
 
 void LEDMatrix::HandleInterrupt()
 {
   ledState = LedState::ABMComplete;
+}
+
+/**
+ * @brief Sets the IC PWM for all LEDs to the specified brightness.
+ * 
+ * @param brightness The brightness to use.
+ */
+void LEDMatrix::SetBrightness(uint8_t brightness)
+{
+  driver->SetLEDPWM(CS_LINES, SW_LINES, brightness); // Set PWM for all LEDs to full power.
 }
 
 /**
@@ -82,27 +89,19 @@ void LEDMatrix::HandleInterrupt()
 void LEDMatrix::Init()
 {
   // Enable the IS31FL3733 chip by setting the SDB pin high.
-  pinMode(SDB_PIN, OUTPUT);
-  digitalWrite(SDB_PIN, HIGH);
+  pinMode(_sdbPin, OUTPUT);
+  digitalWrite(_sdbPin, HIGH);
 
   // Register for interrupts when ABM completes.
-  pinMode(INTB_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(INTB_PIN), _eventHandler, CHANGE);
+  pinMode(_intbPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(_intbPin), _eventHandler, CHANGE);
 
-  Serial.println("Initializing LED driver");
   driver->Init();
 
-  Serial.println("Setting global current control to half");
-  driver->SetGCC(127);
-
-  Serial.println("Setting PWM state for all LEDs to full power");
-  driver->SetLEDPWM(CS_LINES, SW_LINES, 255);
-
-  Serial.println("Turning on all LEDs");
-  driver->SetLEDState(CS_LINES, SW_LINES, LED_STATE::ON);
-
-  Serial.println("Configure all LEDs for ABM1");
-  driver->SetLEDMode(CS_LINES, SW_LINES, LED_MODE::ABM1);
+  driver->SetGCC(127);                                    // Set global current control to half.
+  driver->SetLEDPWM(CS_LINES, SW_LINES, 255);             // Set PWM for all LEDs to full power.
+  driver->SetLEDState(CS_LINES, SW_LINES, LED_STATE::ON); // Turn on all the LEDs.
+  driver->SetLEDMode(CS_LINES, SW_LINES, LED_MODE::ABM1); // Configure all LEDs for ABM
 
   ABM_CONFIG ABM1;
 
@@ -114,14 +113,10 @@ void LEDMatrix::Init()
   ABM1.Tend = ABM_LOOP_END::LOOP_END_T3;
   ABM1.Times = 2;
 
-  // Write ABM structure parameters to device registers.
-  driver->ConfigABM(ABM_NUM::NUM_1, &ABM1);
+  driver->ConfigABM(ABM_NUM::NUM_1, &ABM1);             // Tell the IC the ABM parameters.
+  driver->WriteCommonReg(COMMONREGISTER::IMR, IMR_IAB); // Enable interrupts when ABM completes and auto-clear them after 8ms.
+  driver->StartABM();                                   // Start ABM mode operation.
 
-  // Enable interrupts when ABM completes and auto-clear them after 8ms
-  driver->WriteCommonReg(COMMONREGISTER::IMR, IMR_IAB);
-
-  // Start ABM mode operation.
-  driver->StartABM();
   ledState = LedState::ABMRunning;
 }
 
@@ -132,14 +127,10 @@ void LEDMatrix::Loop()
   {
   case LedState::ABMNotStarted:
   {
-    Serial.println("ABM not started");
-    delay(500);
     break;
   }
   case LedState::ABMRunning:
   {
-    Serial.println("ABM running");
-    delay(500);
     break;
   }
   case LedState::ABMComplete:
@@ -150,8 +141,6 @@ void LEDMatrix::Loop()
     // Check and see if ABM1 is the ABM that finished.
     if (interruptStatus & ISR_ABM1)
     {
-      Serial.println("ABM1 completed");
-      Serial.println("Configure all LEDs for full on");
       driver->SetLEDMode(CS_LINES, SW_LINES, LED_MODE::PWM);
 
       ledState = LedState::LEDOn;
@@ -160,8 +149,6 @@ void LEDMatrix::Loop()
   }
   case LedState::LEDOn:
   {
-    Serial.println("LEDs on");
-    delay(500);
     break;
   }
   }

@@ -26,6 +26,8 @@ private:
   volatile LedState ledState = LedState::ABMNotStarted;
   IS31FL3733::IS31FL3733Driver *driver;
   LEDEvent _eventHandler;
+  uint8_t _sdbPin;
+  uint8_t _intbPin;
 
 public:
   LEDMatrix(ADDR addr1, ADDR addr2, uint8_t sdbPin, uint8_t intbPin, LEDEvent eventHandler);
@@ -33,4 +35,5 @@ public:
   void HandleInterrupt();
   void Init();
   void Loop();
+  void SetBrightness(uint8_t brightness);
 };
