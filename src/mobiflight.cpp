@@ -21,7 +21,7 @@ char foo;
 //#define DEBUG 1
 
 #include "MFEEPROM.h"
-#include <CmdMessenger.h>
+#include "CmdMessenger.h"
 
 #if MF_SEGMENT_SUPPORT == 1
 #include <MFSegments.h>
