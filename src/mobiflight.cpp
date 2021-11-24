@@ -113,11 +113,18 @@ void generateSerial(bool force)
 
 void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
 {
-  char name[MaxNameLength] = "";
+  char buttonName[MaxNameLength] = "";
+  uint8_t index = pgm_read_byte(&(rowColumnMappings[row][column]));
+
+  if (index == 255)
+  {
+    cmdMessenger.sendCmd(kStatus, "Row/column isn't a valid button");
+    return;
+  }
+  strcpy_P(buttonName, (char *)pgm_read_word(&(pinNames[index])));
 
   cmdMessenger.sendCmdStart(MFMessage::kButtonChange);
-  cmdMessenger.sendCmdArg(row);
-  cmdMessenger.sendCmdArg(column);
+  cmdMessenger.sendCmdArg(buttonName);
   cmdMessenger.sendCmdArg(state);
   cmdMessenger.sendCmdEnd();
 }
