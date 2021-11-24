@@ -4,6 +4,7 @@
 
 #include "CmdMessenger.h"
 #include "KeyboardMatrix.h"
+#include "LEDMatrix.h"
 #include "mobiflight.h"
 #include "MFEEPROM.h"
 #include "ButtonNames.h"
@@ -23,10 +24,13 @@ char name[sizeof(MOBIFLIGHT_NAME)] = MOBIFLIGHT_NAME;
 constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // I2C address of the MCP23017 IC that reads rows
 constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // I2C address of the MCP23017 IC that reads columns
 constexpr uint8_t INTA_PIN = 2;              // Row interrupts pin
+constexpr uint8_t SDB_PIN = 4;               // Arduino pin connected to SDB on the LED driver.
+constexpr uint8_t INTB_PIN = 7;              // Arduino pin connected to to INTB on the LED driver.
 
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
 KeyboardMatrix keyboardMatrix(ROW_I2C_ADDRESS, COLUMN_I2C_ADDRESS, INTA_PIN, OnKeyboardEvent, OnButtonPress);
+LEDMatrix ledMatrix(ADDR::GND, ADDR::GND, SDB_PIN, INTB_PIN, OnLEDEvent);
 
 /**
  * @brief Registers callbacks for all supported MobiFlight commands.
@@ -49,10 +53,24 @@ void attachCommandCallbacks()
   cmdMessenger.attach(MFMessage::kResetBoard, OnResetBoard);
 }
 
+/**
+ * @brief Handles an interrupt from the LEDMatrix.
+ * 
+ */
+void OnLEDEvent()
+{
+  ledMatrix.HandleInterrupt();
+}
+
+/**
+ * @brief Handles an interrupt from the KeyboardMatrix.
+ * 
+ */
 void OnKeyboardEvent()
 {
   keyboardMatrix.HandleInterrupt();
 }
+
 /**
  * @brief General callback to simply respond OK to the desktop app for unsupported commands.
  * 
@@ -240,6 +258,7 @@ void setup()
 
   OnResetBoard();
   keyboardMatrix.Init();
+  ledMatrix.Init();
 #ifdef DEBUG
   Serial.println("Initializing complete");
 #endif
@@ -254,4 +273,5 @@ void loop()
   // Process incoming serial data, and perform callbacks
   cmdMessenger.feedinSerialData();
   keyboardMatrix.Loop();
+  ledMatrix.Loop();
 }

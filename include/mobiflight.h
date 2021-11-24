@@ -45,6 +45,7 @@ void OnGenNewSerial();
 void OnGetConfig();
 void OnGetInfo();
 void OnKeyboardEvent();
+void OnLEDEvent();
 void OnResetBoard();
 void OnSaveConfig();
 void OnSetConfig();
