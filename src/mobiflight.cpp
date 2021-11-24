@@ -1,23 +1,15 @@
-/**
- * Includes Core Arduino functionality 
- **/
-char foo;
 #include <Arduino.h>
-
-#include "PinNames.h"
-
-#include "mobiflight.h"
 #include <MFBoards.h>
+
+#include "CmdMessenger.h"
+#include "mobiflight.h"
+#include "MFEEPROM.h"
+#include "PinNames.h"
 
 // The build version comes from an environment variable
 #define STRINGIZER(arg) #arg
 #define STR_VALUE(arg) STRINGIZER(arg)
 #define VERSION STR_VALUE(BUILD_VERSION)
-
-//#define DEBUG 1
-
-#include "MFEEPROM.h"
-#include "CmdMessenger.h"
 
 const uint8_t MEM_OFFSET_SERIAL = 0;
 const uint8_t MEM_LEN_SERIAL = 11;
@@ -26,24 +18,15 @@ const char type[sizeof(MOBIFLIGHT_TYPE)] = MOBIFLIGHT_TYPE;
 char serial[MEM_LEN_SERIAL] = MOBIFLIGHT_SERIAL;
 char name[sizeof(MOBIFLIGHT_NAME)] = MOBIFLIGHT_NAME;
 
-bool powerSavingMode = false;
-const unsigned long POWER_SAVING_TIME = 60 * 15; // in seconds
-
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 unsigned long lastCommand;
 
 MFEEPROM MFeeprom;
 
 /**
- * @brief General callback to simply respond OK to the desktop app for unsupported commands.
+ * @brief Registers callbacks for all supported MobiFlight commands.
  * 
  */
-void SendOk()
-{
-  cmdMessenger.sendCmd(kConfigSaved, F("OK"));
-}
-
-// Callbacks define on which received commands we take action
 void attachCommandCallbacks()
 {
   // Attach callback methods
@@ -61,35 +44,54 @@ void attachCommandCallbacks()
   cmdMessenger.attach(kResetBoard, OnResetBoard);
 }
 
+/**
+ * @brief General callback to simply respond OK to the desktop app for unsupported commands.
+ * 
+ */
+void SendOk()
+{
+  cmdMessenger.sendCmd(kConfigSaved, F("OK"));
+}
+
+/**
+ * @brief Always reports success to MobiFlight on kSaveConfig.
+ * 
+ */
 void OnSaveConfig()
 {
   cmdMessenger.sendCmd(kConfigSaved, F("OK"));
 }
 
+/**
+ * @brief Always reports success to MobiFlight on kActivateConfig.
+ * 
+ */
 void OnActivateConfig()
 {
   cmdMessenger.sendCmd(kConfigActivated, F("OK"));
 }
 
+/**
+ * @brief Loads or generates a new board serial number. Sends a kConfigActivated
+ * message to MobiFlight for compatibility purposes.
+ * 
+ */
 void OnResetBoard()
 {
   generateSerial(false);
+
+  // This is required to maintain compatibility with the standard Mobiflight firmware
+  // which eventually activates the config when resetting the board.
+  cmdMessenger.sendCmd(kConfigActivated, F("OK"));
   lastCommand = millis();
 }
 
-// Setup function
-void setup()
-{
-  Serial.begin(115200);
-
-  attachCommandCallbacks();
-  cmdMessenger.printLfCr();
-
-  MFeeprom.init();
-
-  OnResetBoard();
-}
-
+/**
+ * @brief Loads the board serial number from EEPROM and generates a new one if force is set to true
+ * or no serial number was present in EEPROM.
+ * 
+ * @param force True if a new serial number should be created even if one already exists. 
+ */
 void generateSerial(bool force)
 {
   MFeeprom.read_block(MEM_OFFSET_SERIAL, serial, MEM_LEN_SERIAL);
@@ -101,33 +103,11 @@ void generateSerial(bool force)
   MFeeprom.write_block(MEM_OFFSET_SERIAL, serial, MEM_LEN_SERIAL);
 }
 
-void SetPowerSavingMode(bool state)
-{
-  powerSavingMode = state;
-}
-
-void updatePowerSaving()
-{
-  if (!powerSavingMode && ((millis() - lastCommand) > (POWER_SAVING_TIME * 1000)))
-  {
-    // enable power saving
-    SetPowerSavingMode(true);
-  }
-  else if (powerSavingMode && ((millis() - lastCommand) < (POWER_SAVING_TIME * 1000)))
-  {
-    // disable power saving
-    SetPowerSavingMode(false);
-  }
-}
-
-// Loop function
-void loop()
-{
-  // Process incoming serial data, and perform callbacks
-  cmdMessenger.feedinSerialData();
-  updatePowerSaving();
-}
-
+/**
+ * @brief Stubbed event handler that always returns 512 remaining bytes for config
+ * to the desktop app.
+ * 
+ */
 void OnSetConfig()
 {
   lastCommand = millis();
@@ -137,7 +117,10 @@ void OnSetConfig()
   cmdMessenger.sendCmd(kStatus, 512);
 }
 
-// Called when a received command has no attached function
+/**
+ * @brief Event handler for unknown commands.
+ * 
+ */
 void OnUnknownCommand()
 {
   lastCommand = millis();
@@ -155,6 +138,10 @@ void OnGetInfo()
   cmdMessenger.sendCmdEnd();
 }
 
+/**
+ * @brief Sends the dynamically generated board configuration to MobiFlight.
+ * 
+ */
 void OnGetConfig()
 {
   char singleModule[20] = "";
@@ -162,11 +149,18 @@ void OnGetConfig()
   lastCommand = millis();
   cmdMessenger.sendCmdStart(kInfo);
   cmdMessenger.sendFieldSeparator();
+
+  // Send configuration for all 69 buttons.
   for (auto i = 0; i < 69; i++)
   {
-    snprintf(singleModule, 20, "1.%i.%s:", i, pinNames[i]);
+    snprintf(singleModule, 20, "%i.%i.%s:", MFDevice::kTypeButton, i, pinNames[i]);
     cmdMessenger.sendArg(singleModule);
   }
+
+  // Send configuration for a single output that's used to control LED brightness
+  snprintf(singleModule, 20, "%i.69.Brightness:", MFDevice::kTypeOutput);
+  cmdMessenger.sendArg(singleModule);
+
   cmdMessenger.sendCmdEnd();
 }
 
@@ -201,4 +195,30 @@ void OnSetName()
   cmdMessenger.sendCmdStart(kStatus);
   cmdMessenger.sendCmdArg(name);
   cmdMessenger.sendCmdEnd();
+}
+
+/**
+ * @brief Android initialization method.
+ * 
+ */
+void setup()
+{
+  Serial.begin(115200);
+
+  attachCommandCallbacks();
+  cmdMessenger.printLfCr();
+
+  MFeeprom.init();
+
+  OnResetBoard();
+}
+
+/**
+ * @brief Arduino application loop.
+ * 
+ */
+void loop()
+{
+  // Process incoming serial data, and perform callbacks
+  cmdMessenger.feedinSerialData();
 }
