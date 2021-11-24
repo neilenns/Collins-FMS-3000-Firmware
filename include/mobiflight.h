@@ -13,7 +13,7 @@ enum MFDevice
 //
 // If you increase this list, make sure to check that the MAXCALLBACKS value
 // in CmdMessenger.h is set apropriately
-enum
+enum MFMessage
 {
   kInitModule = 0,          // 0
   kSetModule = 1,           // 1

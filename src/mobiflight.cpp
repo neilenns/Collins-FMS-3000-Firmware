@@ -36,17 +36,17 @@ void attachCommandCallbacks()
 {
   // Attach callback methods
   cmdMessenger.attach(OnUnknownCommand);
-  cmdMessenger.attach(kSetPin, OnSetPin);
-  cmdMessenger.attach(kGetInfo, OnGetInfo);
-  cmdMessenger.attach(kGetConfig, OnGetConfig);
-  cmdMessenger.attach(kSetConfig, OnSetConfig);
-  cmdMessenger.attach(kResetConfig, SendOk);
-  cmdMessenger.attach(kSaveConfig, OnSaveConfig);
-  cmdMessenger.attach(kActivateConfig, OnActivateConfig);
-  cmdMessenger.attach(kSetName, OnSetName);
-  cmdMessenger.attach(kGenNewSerial, OnGenNewSerial);
-  cmdMessenger.attach(kTrigger, SendOk);
-  cmdMessenger.attach(kResetBoard, OnResetBoard);
+  cmdMessenger.attach(MFMessage::kSetPin, OnSetPin);
+  cmdMessenger.attach(MFMessage::kGetInfo, OnGetInfo);
+  cmdMessenger.attach(MFMessage::kGetConfig, OnGetConfig);
+  cmdMessenger.attach(MFMessage::kSetConfig, OnSetConfig);
+  cmdMessenger.attach(MFMessage::kResetConfig, SendOk);
+  cmdMessenger.attach(MFMessage::kSaveConfig, OnSaveConfig);
+  cmdMessenger.attach(MFMessage::kActivateConfig, OnActivateConfig);
+  cmdMessenger.attach(MFMessage::kSetName, OnSetName);
+  cmdMessenger.attach(MFMessage::kGenNewSerial, OnGenNewSerial);
+  cmdMessenger.attach(MFMessage::kTrigger, SendOk);
+  cmdMessenger.attach(MFMessage::kResetBoard, OnResetBoard);
 }
 
 void OnKeyboardEvent()
@@ -59,7 +59,7 @@ void OnKeyboardEvent()
  */
 void SendOk()
 {
-  cmdMessenger.sendCmd(kStatus, F("OK"));
+  cmdMessenger.sendCmd(MFMessage::kStatus, F("OK"));
 }
 
 /**
@@ -68,7 +68,7 @@ void SendOk()
  */
 void OnSaveConfig()
 {
-  cmdMessenger.sendCmd(kConfigSaved, F("OK"));
+  cmdMessenger.sendCmd(MFMessage::kConfigSaved, F("OK"));
 }
 
 /**
@@ -77,7 +77,7 @@ void OnSaveConfig()
  */
 void OnActivateConfig()
 {
-  cmdMessenger.sendCmd(kConfigActivated, F("OK"));
+  cmdMessenger.sendCmd(MFMessage::kConfigActivated, F("OK"));
 }
 
 /**
@@ -113,7 +113,7 @@ void generateSerial(bool force)
 
 void OnButtonPress(ButtonState state, const char *name)
 {
-  cmdMessenger.sendCmdStart(kButtonChange);
+  cmdMessenger.sendCmdStart(MFMessage::kButtonChange);
   cmdMessenger.sendCmdArg(name);
   cmdMessenger.sendCmdArg(state);
   cmdMessenger.sendCmdEnd();
@@ -128,7 +128,7 @@ void OnSetConfig()
 {
   // Since this firmware has a fixed config just report back a length to make
   // the desktop app happy.
-  cmdMessenger.sendCmd(kStatus, 512);
+  cmdMessenger.sendCmd(MFMessage::kStatus, 512);
 }
 
 /**
@@ -137,12 +137,12 @@ void OnSetConfig()
  */
 void OnUnknownCommand()
 {
-  cmdMessenger.sendCmd(kStatus, F("n/a"));
+  cmdMessenger.sendCmd(MFMessage::kStatus, F("n/a"));
 }
 
 void OnGetInfo()
 {
-  cmdMessenger.sendCmdStart(kInfo);
+  cmdMessenger.sendCmdStart(MFMessage::kInfo);
   cmdMessenger.sendCmdArg(type);
   cmdMessenger.sendCmdArg(name);
   cmdMessenger.sendCmdArg(serial);
@@ -159,7 +159,7 @@ void OnGetConfig()
   auto i = 0;
   char singleModule[20] = "";
 
-  cmdMessenger.sendCmdStart(kInfo);
+  cmdMessenger.sendCmdStart(MFMessage::kInfo);
   cmdMessenger.sendFieldSeparator();
 
   // Send configuration for all 69 buttons.
@@ -189,7 +189,7 @@ void OnSetPin()
 void OnGenNewSerial()
 {
   generateSerial(true);
-  cmdMessenger.sendCmdStart(kInfo);
+  cmdMessenger.sendCmdStart(MFMessage::kInfo);
   cmdMessenger.sendCmdArg(serial);
   cmdMessenger.sendCmdEnd();
 }
@@ -203,7 +203,7 @@ void OnSetName()
 {
   cmdMessenger.readStringArg();
 
-  cmdMessenger.sendCmdStart(kStatus);
+  cmdMessenger.sendCmdStart(MFMessage::kStatus);
   cmdMessenger.sendCmdArg(name);
   cmdMessenger.sendCmdEnd();
 }
@@ -226,7 +226,9 @@ void setup()
 
   OnResetBoard();
   keyboardMatrix.Init();
+#ifdef DEBUG
   Serial.println("Initializing complete");
+#endif
 }
 
 /**
