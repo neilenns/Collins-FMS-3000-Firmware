@@ -111,10 +111,13 @@ void generateSerial(bool force)
   MFeeprom.write_block(MEM_OFFSET_SERIAL, serial, MEM_LEN_SERIAL);
 }
 
-void OnButtonPress(ButtonState state, const char *name)
+void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
 {
+  char name[MaxNameLength] = "";
+
   cmdMessenger.sendCmdStart(MFMessage::kButtonChange);
-  cmdMessenger.sendCmdArg(name);
+  cmdMessenger.sendCmdArg(row);
+  cmdMessenger.sendCmdArg(column);
   cmdMessenger.sendCmdArg(state);
   cmdMessenger.sendCmdEnd();
 }
@@ -158,6 +161,7 @@ void OnGetConfig()
 {
   auto i = 0;
   char singleModule[20] = "";
+  char pinName[MaxNameLength] = "";
 
   cmdMessenger.sendCmdStart(MFMessage::kInfo);
   cmdMessenger.sendFieldSeparator();
@@ -165,7 +169,10 @@ void OnGetConfig()
   // Send configuration for all 69 buttons.
   for (i = 0; i < 69; i++)
   {
-    snprintf(singleModule, 20, "%i.%i.%s:", MFDevice::kTypeButton, i, pinNames[i]);
+    // Get the pin name from flash
+    strcpy_P(pinName, (char *)pgm_read_word(&(pinNames[i])));
+
+    snprintf(singleModule, 20, "%i.%i.%s:", MFDevice::kTypeButton, i, pinName);
     cmdMessenger.sendArg(singleModule);
   }
 

@@ -164,7 +164,7 @@ void KeyboardMatrix::CheckForButton()
   currentState = WaitingForPress;
 #endif
 
-  _buttonHandler(ButtonState::Pressed, "Button");
+  _buttonHandler(ButtonState::Pressed, _activeRow, _activeColumn);
 
   // Flip all the registers back to the default configuration to look for
   // when the row clears.
@@ -194,7 +194,7 @@ void KeyboardMatrix::CheckForRelease()
     Serial.println(_activeColumn);
 #endif
 
-    _buttonHandler(ButtonState::Released, "Button");
+    _buttonHandler(ButtonState::Released, _activeRow, _activeColumn);
 
     currentState = WaitingForPress;
   }

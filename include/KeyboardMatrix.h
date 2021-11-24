@@ -20,7 +20,7 @@ enum ButtonState
 extern "C"
 {
   typedef void (*KeyboardEvent)();
-  typedef void (*ButtonEvent)(ButtonState, const char *);
+  typedef void (*ButtonEvent)(ButtonState, uint8_t, uint8_t);
 };
 
 class KeyboardMatrix

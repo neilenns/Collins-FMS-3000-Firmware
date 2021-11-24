@@ -38,11 +38,9 @@ enum MFMessage
 
 void attachCommandCallbacks();
 void generateSerial(bool force);
-void handlerOnEncoder(uint8_t eventId, uint8_t pin, const char *name);
-void handlerOnRelease(uint8_t eventId, uint8_t pin, const char *name);
 void loadConfig();
 void OnActivateConfig();
-void OnButtonPress(ButtonState state, const char *name);
+void OnButtonPress(ButtonState state, uint8_t row, uint8_t column);
 void OnGenNewSerial();
 void OnGetConfig();
 void OnGetInfo();
