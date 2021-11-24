@@ -196,12 +196,11 @@ void OnSetName()
  */
 void setup()
 {
+  MFeeprom.init();
   Serial.begin(115200);
 
   attachCommandCallbacks();
   cmdMessenger.printLfCr();
-
-  MFeeprom.init();
 
   OnResetBoard();
 }
