@@ -49,7 +49,7 @@ void attachCommandCallbacks()
  */
 void SendOk()
 {
-  cmdMessenger.sendCmd(kConfigSaved, F("OK"));
+  cmdMessenger.sendCmd(kStatus, F("OK"));
 }
 
 /**
@@ -81,7 +81,7 @@ void OnResetBoard()
 
   // This is required to maintain compatibility with the standard Mobiflight firmware
   // which eventually activates the config when resetting the board.
-  cmdMessenger.sendCmd(kConfigActivated, F("OK"));
+  OnActivateConfig();
 }
 
 /**
