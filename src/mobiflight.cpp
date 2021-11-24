@@ -295,10 +295,6 @@ void setup()
   attachCommandCallbacks();
   cmdMessenger.printLfCr();
 
-  // Wait for a serial connection before continuing to simplify the debugging experience.
-  while (!Serial)
-    ;
-
   OnResetBoard();
   keyboardMatrix.Init();
   ledMatrix.Init();
