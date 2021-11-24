@@ -19,7 +19,6 @@ char serial[MEM_LEN_SERIAL] = MOBIFLIGHT_SERIAL;
 char name[sizeof(MOBIFLIGHT_NAME)] = MOBIFLIGHT_NAME;
 
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
-unsigned long lastCommand;
 
 MFEEPROM MFeeprom;
 
@@ -83,7 +82,6 @@ void OnResetBoard()
   // This is required to maintain compatibility with the standard Mobiflight firmware
   // which eventually activates the config when resetting the board.
   cmdMessenger.sendCmd(kConfigActivated, F("OK"));
-  lastCommand = millis();
 }
 
 /**
@@ -110,8 +108,6 @@ void generateSerial(bool force)
  */
 void OnSetConfig()
 {
-  lastCommand = millis();
-
   // Since this firmware has a fixed config just report back a length to make
   // the desktop app happy.
   cmdMessenger.sendCmd(kStatus, 512);
@@ -123,13 +119,11 @@ void OnSetConfig()
  */
 void OnUnknownCommand()
 {
-  lastCommand = millis();
   cmdMessenger.sendCmd(kStatus, F("n/a"));
 }
 
 void OnGetInfo()
 {
-  lastCommand = millis();
   cmdMessenger.sendCmdStart(kInfo);
   cmdMessenger.sendCmdArg(type);
   cmdMessenger.sendCmdArg(name);
@@ -146,7 +140,6 @@ void OnGetConfig()
 {
   char singleModule[20] = "";
 
-  lastCommand = millis();
   cmdMessenger.sendCmdStart(kInfo);
   cmdMessenger.sendFieldSeparator();
 
@@ -172,7 +165,6 @@ void OnSetPin()
   int state = cmdMessenger.readInt16Arg();
   // Set led
   analogWrite(pin, state);
-  lastCommand = millis();
 }
 
 void OnGenNewSerial()
