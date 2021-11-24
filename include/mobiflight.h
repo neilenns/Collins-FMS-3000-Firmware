@@ -1,5 +1,7 @@
 #pragma once
 
+#include "KeyboardMatrix.h"
+
 enum MFDevice
 {
   kTypeButton = 1, // 1
@@ -40,9 +42,11 @@ void handlerOnEncoder(uint8_t eventId, uint8_t pin, const char *name);
 void handlerOnRelease(uint8_t eventId, uint8_t pin, const char *name);
 void loadConfig();
 void OnActivateConfig();
+void OnButtonPress(ButtonState state, const char *name);
 void OnGenNewSerial();
 void OnGetConfig();
 void OnGetInfo();
+void OnKeyboardEvent();
 void OnResetBoard();
 void OnSaveConfig();
 void OnSetConfig();

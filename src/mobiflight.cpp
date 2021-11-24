@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include <MFBoards.h>
+#include <Wire.h>
 
 #include "CmdMessenger.h"
+#include "KeyboardMatrix.h"
 #include "mobiflight.h"
 #include "MFEEPROM.h"
 #include "PinNames.h"
@@ -18,9 +20,13 @@ const char type[sizeof(MOBIFLIGHT_TYPE)] = MOBIFLIGHT_TYPE;
 char serial[MEM_LEN_SERIAL] = MOBIFLIGHT_SERIAL;
 char name[sizeof(MOBIFLIGHT_NAME)] = MOBIFLIGHT_NAME;
 
-CmdMessenger cmdMessenger = CmdMessenger(Serial);
+const uint8_t ROW_I2C_ADDRESS = 0x20;    // I2C address of the MCP23017 IC that reads rows
+const uint8_t COLUMN_I2C_ADDRESS = 0x21; // I2C address of the MCP23017 IC that reads columns
+const uint8_t INTA_PIN = 2;              // Row interrupts pin
 
+CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
+KeyboardMatrix keyboardMatrix(ROW_I2C_ADDRESS, COLUMN_I2C_ADDRESS, INTA_PIN, OnKeyboardEvent, OnButtonPress);
 
 /**
  * @brief Registers callbacks for all supported MobiFlight commands.
@@ -43,6 +49,10 @@ void attachCommandCallbacks()
   cmdMessenger.attach(kResetBoard, OnResetBoard);
 }
 
+void OnKeyboardEvent()
+{
+  keyboardMatrix.HandleInterrupt();
+}
 /**
  * @brief General callback to simply respond OK to the desktop app for unsupported commands.
  * 
@@ -99,6 +109,14 @@ void generateSerial(bool force)
   sprintf(serial, "SN-%03x-", (unsigned int)random(4095));
   sprintf(&serial[7], "%03x", (unsigned int)random(4095));
   MFeeprom.write_block(MEM_OFFSET_SERIAL, serial, MEM_LEN_SERIAL);
+}
+
+void OnButtonPress(ButtonState state, const char *name)
+{
+  cmdMessenger.sendCmdStart(kButtonChange);
+  cmdMessenger.sendCmdArg(name);
+  cmdMessenger.sendCmdArg(state);
+  cmdMessenger.sendCmdEnd();
 }
 
 /**
@@ -197,12 +215,18 @@ void OnSetName()
 void setup()
 {
   MFeeprom.init();
+  Wire.begin();
   Serial.begin(115200);
+
+  while (!Serial)
+    ;
 
   attachCommandCallbacks();
   cmdMessenger.printLfCr();
 
   OnResetBoard();
+  keyboardMatrix.Init();
+  Serial.println("Initializing complete");
 }
 
 /**
@@ -213,4 +237,5 @@ void loop()
 {
   // Process incoming serial data, and perform callbacks
   cmdMessenger.feedinSerialData();
+  keyboardMatrix.Loop();
 }
