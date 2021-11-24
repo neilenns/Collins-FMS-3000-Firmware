@@ -6,23 +6,23 @@
 #include "KeyboardMatrix.h"
 #include "mobiflight.h"
 #include "MFEEPROM.h"
-#include "PinNames.h"
+#include "ButtonNames.h"
 
 // The build version comes from an environment variable
 #define STRINGIZER(arg) #arg
 #define STR_VALUE(arg) STRINGIZER(arg)
 #define VERSION STR_VALUE(BUILD_VERSION)
 
-const uint8_t MEM_OFFSET_SERIAL = 0;
-const uint8_t MEM_LEN_SERIAL = 11;
+constexpr uint8_t MEM_OFFSET_SERIAL = 0;
+constexpr uint8_t MEM_LEN_SERIAL = 11;
 
-const char type[sizeof(MOBIFLIGHT_TYPE)] = MOBIFLIGHT_TYPE;
+constexpr char type[sizeof(MOBIFLIGHT_TYPE)] = MOBIFLIGHT_TYPE;
 char serial[MEM_LEN_SERIAL] = MOBIFLIGHT_SERIAL;
 char name[sizeof(MOBIFLIGHT_NAME)] = MOBIFLIGHT_NAME;
 
-const uint8_t ROW_I2C_ADDRESS = 0x20;    // I2C address of the MCP23017 IC that reads rows
-const uint8_t COLUMN_I2C_ADDRESS = 0x21; // I2C address of the MCP23017 IC that reads columns
-const uint8_t INTA_PIN = 2;              // Row interrupts pin
+constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // I2C address of the MCP23017 IC that reads rows
+constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // I2C address of the MCP23017 IC that reads columns
+constexpr uint8_t INTA_PIN = 2;              // Row interrupts pin
 
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
@@ -113,15 +113,15 @@ void generateSerial(bool force)
 
 void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
 {
-  char buttonName[MaxNameLength] = "";
-  uint8_t index = pgm_read_byte(&(rowColumnMappings[row][column]));
+  char buttonName[ButtonNames::MaxNameLength] = "";
+  uint8_t index = pgm_read_byte(&(ButtonNames::RowColumnLUT[row][column]));
 
   if (index == 255)
   {
     cmdMessenger.sendCmd(kStatus, "Row/column isn't a valid button");
     return;
   }
-  strcpy_P(buttonName, (char *)pgm_read_word(&(pinNames[index])));
+  strcpy_P(buttonName, (char *)pgm_read_word(&(ButtonNames::Names[index])));
 
   cmdMessenger.sendCmdStart(MFMessage::kButtonChange);
   cmdMessenger.sendCmdArg(buttonName);
@@ -168,7 +168,7 @@ void OnGetConfig()
 {
   auto i = 0;
   char singleModule[20] = "";
-  char pinName[MaxNameLength] = "";
+  char pinName[ButtonNames::MaxNameLength] = "";
 
   cmdMessenger.sendCmdStart(MFMessage::kInfo);
   cmdMessenger.sendFieldSeparator();
@@ -177,7 +177,7 @@ void OnGetConfig()
   for (i = 0; i < 69; i++)
   {
     // Get the pin name from flash
-    strcpy_P(pinName, (char *)pgm_read_word(&(pinNames[i])));
+    strcpy_P(pinName, (char *)pgm_read_word(&(ButtonNames::Names[i])));
 
     snprintf(singleModule, 20, "%i.%i.%s:", MFDevice::kTypeButton, i, pinName);
     cmdMessenger.sendArg(singleModule);
