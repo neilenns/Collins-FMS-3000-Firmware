@@ -7,7 +7,7 @@
 
 namespace ButtonNames
 {
-    static constexpr uint8_t RowColumnLUT[12][12] PROGMEM = {
+    constexpr uint8_t RowColumnLUT[12][12] PROGMEM = {
         {0,
          255,
          255,
@@ -153,7 +153,7 @@ namespace ButtonNames
          57,
          255}};
 
-    static constexpr uint8_t MaxNameLength = 5;
+    constexpr uint8_t MaxNameLength = 5;
 
     constexpr char string0[] PROGMEM = "LSK1";
     constexpr char string1[] PROGMEM = "LSK2";
