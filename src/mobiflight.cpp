@@ -19,14 +19,12 @@ char foo;
 #include "MFEEPROM.h"
 #include "CmdMessenger.h"
 
-const uint8_t MEM_OFFSET_NAME = 0;
-const uint8_t MEM_LEN_NAME = 48;
-const uint8_t MEM_OFFSET_SERIAL = MEM_OFFSET_NAME + MEM_LEN_NAME;
+const uint8_t MEM_OFFSET_SERIAL = 0;
 const uint8_t MEM_LEN_SERIAL = 11;
 
 const char type[sizeof(MOBIFLIGHT_TYPE)] = MOBIFLIGHT_TYPE;
 char serial[MEM_LEN_SERIAL] = MOBIFLIGHT_SERIAL;
-char name[MEM_LEN_NAME] = MOBIFLIGHT_NAME;
+char name[sizeof(MOBIFLIGHT_NAME)] = MOBIFLIGHT_NAME;
 
 bool powerSavingMode = false;
 const unsigned long POWER_SAVING_TIME = 60 * 15; // in seconds
@@ -75,10 +73,8 @@ void OnActivateConfig()
 
 void OnResetBoard()
 {
-  MFeeprom.init();
   generateSerial(false);
   lastCommand = millis();
-  _restoreName();
 }
 
 // Setup function
@@ -88,6 +84,8 @@ void setup()
 
   attachCommandCallbacks();
   cmdMessenger.printLfCr();
+
+  MFeeprom.init();
 
   OnResetBoard();
 }
@@ -105,20 +103,7 @@ void generateSerial(bool force)
 
 void SetPowerSavingMode(bool state)
 {
-  // disable the lights ;)
   powerSavingMode = state;
-
-#if MF_SEGMENT_SUPPORT == 1
-  PowerSaveLedSegment(state);
-#endif
-
-#ifdef DEBUG
-  if (state)
-    cmdMessenger.sendCmd(kStatus, F("On"));
-  else
-    cmdMessenger.sendCmd(kStatus, F("Off"));
-#endif
-  //PowerSaveOutputs(state);
 }
 
 void updatePowerSaving()
@@ -142,14 +127,6 @@ void loop()
   cmdMessenger.feedinSerialData();
   updatePowerSaving();
 }
-
-void handlerOnRelease(uint8_t eventId, uint8_t pin, const char *name)
-{
-  cmdMessenger.sendCmdStart(kButtonChange);
-  cmdMessenger.sendCmdArg(name);
-  cmdMessenger.sendCmdArg(eventId);
-  cmdMessenger.sendCmdEnd();
-};
 
 void OnSetConfig()
 {
@@ -212,29 +189,16 @@ void OnGenNewSerial()
   cmdMessenger.sendCmdEnd();
 }
 
+/**
+ * @brief Stubbed out method to accept the name argument then discard it. The name
+ * is actually hardcoded in the firmware.
+ * 
+ */
 void OnSetName()
 {
-  char *cfg = cmdMessenger.readStringArg();
-  memcpy(name, cfg, MEM_LEN_NAME);
-  _storeName();
+  cmdMessenger.readStringArg();
+
   cmdMessenger.sendCmdStart(kStatus);
   cmdMessenger.sendCmdArg(name);
   cmdMessenger.sendCmdEnd();
-}
-
-void _storeName()
-{
-  char prefix[] = "#";
-  MFeeprom.write_block(MEM_OFFSET_NAME, prefix, 1);
-  MFeeprom.write_block(MEM_OFFSET_NAME + 1, name, MEM_LEN_NAME - 1);
-}
-
-void _restoreName()
-{
-  char testHasName[1] = "";
-  MFeeprom.read_block(MEM_OFFSET_NAME, testHasName, 1);
-  if (testHasName[0] != '#')
-    return;
-
-  MFeeprom.read_block(MEM_OFFSET_NAME + 1, name, MEM_LEN_NAME - 1);
 }

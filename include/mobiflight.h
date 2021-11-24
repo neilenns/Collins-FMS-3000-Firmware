@@ -28,8 +28,6 @@ enum
   kResetBoard = 24,         // 24
 };
 
-void _restoreName();
-void _storeName();
 void attachCommandCallbacks();
 void generateSerial(bool force);
 void handlerOnEncoder(uint8_t eventId, uint8_t pin, const char *name);
