@@ -362,4 +362,3 @@ public:
   void unescape(char *fromChar);
   void printSci(double f, unsigned int digits);
 };
-#endif
