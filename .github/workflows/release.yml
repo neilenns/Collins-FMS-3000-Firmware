@@ -45,11 +45,15 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: firmware
-          path: .pio/build/**/mobiflight*.hex
+          path: |
+            .pio/build/**/mobiflight*.hex
+            MobiFlight Resources/*.*
 
       - name: Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: .pio/build/**/firmware*.hex
+          files: |
+            .pio/build/**/firmware*.hex
+            MobiFlight Resources/*.*
