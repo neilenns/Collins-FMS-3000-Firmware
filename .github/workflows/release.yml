@@ -41,13 +41,17 @@ jobs:
           VERSION: ${{ steps.get_version.outputs.version-without-v }}
         run: pio run
 
-      - name: Archive production artifacts
+      - name: Archive firmware
         uses: actions/upload-artifact@v2
         with:
           name: firmware
-          path: |
-            .pio/build/**/mobiflight*.hex
-            MobiFlight Resources/*.*
+          path: .pio/build/**/firmware*.hex
+
+      - name: Archive MobiFlight configuration files
+        uses: actions/upload-artifact@v2
+        with:
+          name: firmware
+          path: MobiFlight Resources/*.*
 
       - name: Release
         uses: softprops/action-gh-release@v1
