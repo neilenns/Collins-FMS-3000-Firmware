@@ -15,13 +15,11 @@
 #define VERSION STR_VALUE(BUILD_VERSION)
 
 // MobiFlight expects a board name, type, and serial number to come from the board
-// when requested. The serial number and name are stored in flash. The board type
-// is fixed via a define.
+// when requested. The serial number is stored in flash. The board type
+// and name are fixed and come from Board.h.
 constexpr uint8_t MEM_OFFSET_SERIAL = 0;
 constexpr uint8_t MEM_LEN_SERIAL = 11;
-constexpr char type[sizeof(MOBIFLIGHT_TYPE)] = MOBIFLIGHT_TYPE;
-char serial[MEM_LEN_SERIAL] = MOBIFLIGHT_SERIAL;
-char name[sizeof(MOBIFLIGHT_NAME)] = MOBIFLIGHT_NAME;
+char serial[MEM_LEN_SERIAL];
 
 // I2C Addresses for the row and column IO expanders.
 constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // Row MCP23017.
@@ -199,8 +197,8 @@ void OnUnknownCommand()
 void OnGetInfo()
 {
   cmdMessenger.sendCmdStart(MFMessage::kInfo);
-  cmdMessenger.sendCmdArg(type);
-  cmdMessenger.sendCmdArg(name);
+  cmdMessenger.sendCmdArg(MOBIFLIGHT_TYPE);
+  cmdMessenger.sendCmdArg(MOBIFLIGHT_NAME);
   cmdMessenger.sendCmdArg(serial);
   cmdMessenger.sendCmdArg(VERSION);
   cmdMessenger.sendCmdEnd();
@@ -277,7 +275,7 @@ void OnSetName()
   cmdMessenger.readStringArg();
 
   cmdMessenger.sendCmdStart(MFMessage::kStatus);
-  cmdMessenger.sendCmdArg(name);
+  cmdMessenger.sendCmdArg(MOBIFLIGHT_NAME);
   cmdMessenger.sendCmdEnd();
 }
 
