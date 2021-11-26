@@ -1,14 +1,13 @@
-# PlatformIO CI/CD template
+# Collins FMS 3000 MobiFlight firmware
 
-This repository template contains all the necessary files to:
+This repository is a highly customized version of the [MobiFlight firmware](https://github.com/MobiFlight/MobiFlight-FirmwareSource) designed to work with the [Collins FMS 3000 PCB](https://github.com/neilenns/Collins-FMS-3000).
 
-1. Do PlatformIO development with VSCode and remote development containers.
-2. GitHub actions for CI/CD, including attaching firmware binaries automatically to every pull request
-   and on every GitHub release.
-3. Automatic version number assignment at build time. Local builds get version `0.0.1`, pull request
-   builds get version `0.0.{pull request number}` and release builds get the version from the GitHub
-   release tag.
+The code is a good example of the minimal methods required for a board to get recognized by [MobiFlight](http://www.mobiflight.com/). It also demonstrates dynamically generating a list of connected devices (69 buttons and one "LED" for brightness control) without the need to store the configuration in EEPROM.
 
-## Using this repository template
+The 69 buttons are handled using a 12x12 keyboard matrix with two MCP23107 providing row and column inputs. Keyboard scanning is interrupt driven using the technique described in Microchip's [AN1081 application note](https://ww1.microchip.com/downloads/en/AppNotes/01081a.pdf). Backlight LEDs are managed using an [ISSI IS31FL3733B matrix LED driver](https://www.lumissil.com/assets/pdf/core/IS31FL3733B_DS.pdf) and features a startup animation with completion detection via interrupts.
 
-Using this repository template is easy: just hit the _Use this template_ button and make a new repo. That's it!
+## Building the repository
+
+This repo is designed to work with [Visual Studio Code](https://code.visualstudio.com/Download) and [PlatformIO](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide). Clone the repo, open the folder in Visual Studio Code, and you will get prompted to install the necessary extensions. Build using the `PlatformIO: Build` command.
+
+A devcontainer configuration is also provided for use with [VSCode Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) and [GitHub Codespaces](https://github.com/features/codespaces).
