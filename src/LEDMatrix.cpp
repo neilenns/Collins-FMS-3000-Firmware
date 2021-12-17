@@ -100,10 +100,14 @@ void LEDMatrix::Init()
   driver->SetGCC(127);                                    // Set global current control to half.
   driver->SetLEDPWM(CS_LINES, SW_LINES, 255);             // Set PWM for all LEDs to full power.
   driver->SetLEDState(CS_LINES, SW_LINES, LED_STATE::ON); // Turn on all the LEDs.
-  driver->SetLEDMode(CS_LINES, SW_LINES, LED_MODE::ABM1); // Configure all LEDs for ABM
-  driver->SetLEDMode(0, 0, LED_MODE::ABM1);
-  driver->SetLEDMode(1, 0, LED_MODE::ABM2);
-  driver->SetLEDMode(2, 0, LED_MODE::ABM3);
+  randomSeed(analogRead(0));
+  for (int i = 0; i < CS_LINES; i++)
+  {
+    for (int j = 0; j < SW_LINES; j++)
+    {
+      driver->SetLEDMode(i, j, static_cast<LED_MODE>(random(1, 3)));
+    }
+  }
   driver->WritePagedRegs(PAGEDREGISTER::LEDABM, abmPattern, abmPatternSize);
 
   ABM_CONFIG ABM1;
@@ -116,15 +120,15 @@ void LEDMatrix::Init()
   ABM1.T4 = ABM_T4::T4_210MS;
   ABM1.Tbegin = ABM_LOOP_BEGIN::LOOP_BEGIN_T1;
   ABM1.Tend = ABM_LOOP_END::LOOP_END_T3;
-  ABM1.Times = 5;
+  ABM1.Times = 3;
 
   ABM2.T1 = ABM_T1::T1_210MS;
   ABM2.T2 = ABM_T2::T2_210MS;
   ABM2.T3 = ABM_T3::T3_210MS;
   ABM2.T4 = ABM_T4::T4_210MS;
   ABM2.Tbegin = ABM_LOOP_BEGIN::LOOP_BEGIN_T2;
-  ABM2.Tend = ABM_LOOP_END::LOOP_END_T3;
-  ABM2.Times = 5;
+  ABM2.Tend = ABM_LOOP_END::LOOP_END_T1;
+  ABM2.Times = 3;
 
   ABM3.T1 = ABM_T1::T1_210MS;
   ABM3.T2 = ABM_T2::T2_210MS;
@@ -132,7 +136,7 @@ void LEDMatrix::Init()
   ABM3.T4 = ABM_T4::T4_210MS;
   ABM3.Tbegin = ABM_LOOP_BEGIN::LOOP_BEGIN_T3;
   ABM3.Tend = ABM_LOOP_END::LOOP_END_T3;
-  ABM3.Times = 5;
+  ABM3.Times = 3;
 
   driver->ConfigABM(ABM_NUM::NUM_1, &ABM1);             // Tell the IC the ABM parameters.
   driver->ConfigABM(ABM_NUM::NUM_2, &ABM2);             // Tell the IC the ABM parameters.
