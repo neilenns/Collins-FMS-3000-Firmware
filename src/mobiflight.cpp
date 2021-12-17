@@ -26,9 +26,9 @@ constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // Row MCP23017.
 constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // Column MCP23017.
 
 // Arduino pin mappings.
-constexpr uint8_t ROW_INTA_PIN = 2; // Row interrupts pin.
+constexpr uint8_t ROW_INTA_PIN = 0; // Row interrupts pin.
 constexpr uint8_t LED_SDB_PIN = 4;  // Arduino pin connected to SDB on the LED driver. Blue jumper wire.
-constexpr uint8_t LED_INTB_PIN = 3; // Arduino pin connected to to INTB on the LED driver.
+constexpr uint8_t LED_INTB_PIN = 7; // Arduino pin connected to to INTB on the LED driver.
 
 // Virtual pins for one-off MobiFlight "modules".
 constexpr uint8_t BRIGHTNESS_PIN = 69;

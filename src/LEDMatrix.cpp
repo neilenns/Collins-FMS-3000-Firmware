@@ -2,13 +2,12 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+#include <ABMPattern.h>
 #include "LEDMatrix.h"
 
 using namespace IS31FL3733;
 
-// Function prototypes for the read and write functions defined later in the file.
-uint8_t i2c_read_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *buffer, uint8_t length);
-uint8_t i2c_write_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *buffer, uint8_t count);
+uint8_t completedABMCount = 0;
 
 /**
  * @brief Read a buffer of data from the specified register.
@@ -102,18 +101,42 @@ void LEDMatrix::Init()
   driver->SetLEDPWM(CS_LINES, SW_LINES, 255);             // Set PWM for all LEDs to full power.
   driver->SetLEDState(CS_LINES, SW_LINES, LED_STATE::ON); // Turn on all the LEDs.
   driver->SetLEDMode(CS_LINES, SW_LINES, LED_MODE::ABM1); // Configure all LEDs for ABM
+  driver->SetLEDMode(0, 0, LED_MODE::ABM1);
+  driver->SetLEDMode(1, 0, LED_MODE::ABM2);
+  driver->SetLEDMode(2, 0, LED_MODE::ABM3);
+  driver->WritePagedRegs(PAGEDREGISTER::LEDABM, abmPattern, abmPatternSize);
 
   ABM_CONFIG ABM1;
+  ABM_CONFIG ABM2;
+  ABM_CONFIG ABM3;
 
-  ABM1.T1 = ABM_T1::T1_840MS;
-  ABM1.T2 = ABM_T2::T2_840MS;
-  ABM1.T3 = ABM_T3::T3_840MS;
-  ABM1.T4 = ABM_T4::T4_840MS;
-  ABM1.Tbegin = ABM_LOOP_BEGIN::LOOP_BEGIN_T4;
+  ABM1.T1 = ABM_T1::T1_210MS;
+  ABM1.T2 = ABM_T2::T2_210MS;
+  ABM1.T3 = ABM_T3::T3_210MS;
+  ABM1.T4 = ABM_T4::T4_210MS;
+  ABM1.Tbegin = ABM_LOOP_BEGIN::LOOP_BEGIN_T1;
   ABM1.Tend = ABM_LOOP_END::LOOP_END_T3;
-  ABM1.Times = 2;
+  ABM1.Times = 5;
+
+  ABM2.T1 = ABM_T1::T1_210MS;
+  ABM2.T2 = ABM_T2::T2_210MS;
+  ABM2.T3 = ABM_T3::T3_210MS;
+  ABM2.T4 = ABM_T4::T4_210MS;
+  ABM2.Tbegin = ABM_LOOP_BEGIN::LOOP_BEGIN_T2;
+  ABM2.Tend = ABM_LOOP_END::LOOP_END_T3;
+  ABM2.Times = 5;
+
+  ABM3.T1 = ABM_T1::T1_210MS;
+  ABM3.T2 = ABM_T2::T2_210MS;
+  ABM3.T3 = ABM_T3::T3_210MS;
+  ABM3.T4 = ABM_T4::T4_210MS;
+  ABM3.Tbegin = ABM_LOOP_BEGIN::LOOP_BEGIN_T3;
+  ABM3.Tend = ABM_LOOP_END::LOOP_END_T3;
+  ABM3.Times = 5;
 
   driver->ConfigABM(ABM_NUM::NUM_1, &ABM1);             // Tell the IC the ABM parameters.
+  driver->ConfigABM(ABM_NUM::NUM_2, &ABM2);             // Tell the IC the ABM parameters.
+  driver->ConfigABM(ABM_NUM::NUM_3, &ABM3);             // Tell the IC the ABM parameters.
   driver->WriteCommonReg(COMMONREGISTER::IMR, IMR_IAB); // Enable interrupts when ABM completes and auto-clear them after 8ms.
   driver->StartABM();                                   // Start ABM mode operation.
 
@@ -141,8 +164,20 @@ void LEDMatrix::Loop()
     // Check and see if ABM1 is the ABM that finished.
     if (interruptStatus & ISR_ABM1)
     {
-      driver->SetLEDMode(CS_LINES, SW_LINES, LED_MODE::PWM);
+      completedABMCount++;
+    }
+    if (interruptStatus & ISR_ABM2)
+    {
+      completedABMCount++;
+    }
+    if (interruptStatus & ISR_ABM3)
+    {
+      completedABMCount++;
+    }
 
+    if (completedABMCount == 3)
+    {
+      driver->SetLEDMode(CS_LINES, SW_LINES, LED_MODE::PWM);
       ledState = LedState::LEDOn;
     }
     break;
