@@ -22,23 +22,17 @@
 
   */
 
-#ifndef CmdMessenger_h
-#define CmdMessenger_h
+#pragma once
 
 #include <inttypes.h>
-#if ARDUINO >= 100
 #include <Arduino.h>
-#else
-#include <WProgram.h>
-#endif
-
-//#include "Stream.h"
 
 extern "C"
 {
   // callback functions always follow the signature: void cmd(void);
   typedef void (*messengerCallbackFunction)(void);
 }
+
 #ifndef MAXCALLBACKS
 #define MAXCALLBACKS 50 // The maximum number of commands   (default: 50)
 #endif
@@ -368,4 +362,3 @@ public:
   void unescape(char *fromChar);
   void printSci(double f, unsigned int digits);
 };
-#endif
