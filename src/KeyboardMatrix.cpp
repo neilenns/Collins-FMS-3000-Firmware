@@ -4,8 +4,6 @@
 
 #include "KeyboardMatrix.h"
 
-const uint16_t ROW_PULLUPS = 0b1111111111111100; // Pullups for the unconnected row pins. The high byte is PORTB, low byte PORTA.
-
 void write16AsBits(uint16_t value)
 {
   for (int i = 0; i < 8; i++)
@@ -91,8 +89,8 @@ void KeyboardMatrix::InitForRowDetection(bool setPullups)
 
   if (setPullups)
   {
-    _columns->writeRegister(MCP23017Register::GPPU_A, 0xFF, 0xFF);                                     // Columns have pull-up resistors on
-    _rows->writeRegister(MCP23017Register::GPPU_A, (uint8_t)ROW_PULLUPS, (uint8_t)(ROW_PULLUPS >> 8)); // Rows have pull-up resistors off for all
+    _columns->writeRegister(MCP23017Register::GPPU_A, 0xFF, 0xFF); // Columns have pull-up resistors on
+    _rows->writeRegister(MCP23017Register::GPPU_A, 0xFF, 0xFF);    // Rows have pull-up resistors off for all connected lines, but on for the four unused rows
   }
 
   _columns->writeRegister(MCP23017Register::INTCON_A, 0x00, 0x00); // Turn interrupts off for columns
@@ -115,7 +113,6 @@ void KeyboardMatrix::Init()
   // Set all the registers for proper interrupt detection on rows
   InitForRowDetection(true);
 
-  // Register for interrupts on the Arduino side
   pinMode(_interruptPin, INPUT_PULLUP);
   attachInterrupt(
       digitalPinToInterrupt(_interruptPin), _interruptHandler,
@@ -128,12 +125,17 @@ void KeyboardMatrix::Init()
  */
 void KeyboardMatrix::CheckForButton()
 {
+  uint8_t rowPortA, rowPortB;
   uint16_t rowStates;
+  uint8_t columnPortA, columnPortB;
   uint16_t columnStates;
 
-  // Read the current state of all 16 row pins. PORTA will be the low byte,
-  // PORTB will be the high byte.
-  rowStates = _rows->read();
+  // Read the current state of all 16 column pins. The board is wired with the low row numbers
+  // connected to port B and the high row numbers connected to port A so read the two
+  // ports separately then combine them in the right order in a 16-bit number.
+  rowPortA = _rows->readPort(MCP23017Port::A);
+  rowPortB = _rows->readPort(MCP23017Port::B);
+  rowStates = (rowPortA << 8) | rowPortB;
 
   // Once the row is known reconfigure a bunch of registers to read the active column
   _columns->writeRegister(MCP23017Register::IODIR_A, 0xFF, 0xFF);   // Switch columns to input
@@ -149,9 +151,12 @@ void KeyboardMatrix::CheckForButton()
   // This step is missing from the application note.
   _rows->write(0x0000);
 
-  // Read the current state of all 16 column pins. PORTA will be the low byte,
-  // PORTB will be the high byte.
-  columnStates = _columns->read();
+  // Read the current state of all 16 column pins. The board is wired with the low column
+  // numbers connected to port B and the high column numbers connected to port A so read the two
+  // ports separately then combine them in the right order in a 16-bit number.
+  columnPortA = _columns->readPort(MCP23017Port::A);
+  columnPortB = _columns->readPort(MCP23017Port::B);
+  columnStates = (columnPortA << 8) | columnPortB;
 
   _activeRow = KeyboardMatrix::GetBitPosition(rowStates);
   _activeColumn = KeyboardMatrix::GetBitPosition(columnStates);
