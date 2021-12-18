@@ -74,6 +74,18 @@ void KeyboardMatrix::HandleInterrupt()
   }
 }
 
+void KeyboardMatrix::EnableRowInterrupts()
+{
+  // Turn on interrupts
+  _rows->writeRegister(MCP23017Register::GPINTEN_A, 0xFF, 0xFF); // Turn on the interrupts for the rows
+}
+
+void KeyboardMatrix::DisableRowInterrupts()
+{
+  // _columns->writeRegister(MCP23017Register::GPINTEN_A, 0xFF, 0xFF); // Temporarily enable column interrupts even though they aren't used
+  _rows->writeRegister(MCP23017Register::GPINTEN_A, 0x00, 0x00); // Disable row interrupts
+}
+
 /**
  * @brief Initializes the MCP23017 to detect interrupts on row changes.
  * 
@@ -97,26 +109,33 @@ void KeyboardMatrix::InitForRowDetection(bool setPullups)
   _columns->writeRegister(MCP23017Register::DEFVAL_A, 0x00, 0x00); // Default value of 0 for columns
   _rows->writeRegister(MCP23017Register::INTCON_A, 0xFF, 0xFF);    // Turn interrupts on for rows
   _rows->writeRegister(MCP23017Register::DEFVAL_A, 0xFF, 0xFF);    // Default value of 1 for rows
-
-  // Turn on interrupts
-  _rows->interruptMode(MCP23017InterruptMode::Or);               // Interrupt on one line
-  _rows->writeRegister(MCP23017Register::GPINTEN_A, 0xFF, 0xFF); // Turn on the interrupts for the rows
-
-  _rows->clearInterrupts(); // Clear all interrupts which could come from initialization
 }
 
+/**
+ * @brief initializes the keyboard matrix.
+ * 
+ */
 void KeyboardMatrix::Init()
 {
   _columns->init();
   _rows->init();
 
-  // Set all the registers for proper interrupt detection on rows
   InitForRowDetection(true);
 
+  // Attach the Arduino interrupt handler.
   pinMode(_interruptPin, INPUT_PULLUP);
   attachInterrupt(
       digitalPinToInterrupt(_interruptPin), _interruptHandler,
       CHANGE);
+
+  // The order of interrupt startup matters a lot. After the row is initialized for
+  // interrupt detection then the state machine is set to WaitingForPress. This ensures
+  // in the rare case that an interrupt fires immediately after initialization
+  // that the state machine won't miss it.
+  _rows->interruptMode(MCP23017InterruptMode::Or); // Interrupt on one line
+  EnableRowInterrupts();
+  _rows->clearInterrupts(); // Clear all interrupts which could come from initialization
+  currentState = DetectionState::WaitingForPress;
 }
 
 /**
@@ -138,14 +157,18 @@ void KeyboardMatrix::CheckForButton()
   rowStates = (rowPortA << 8) | rowPortB;
 
   // Once the row is known reconfigure a bunch of registers to read the active column
-  _columns->writeRegister(MCP23017Register::IODIR_A, 0xFF, 0xFF);   // Switch columns to input
-  _rows->writeRegister(MCP23017Register::IODIR_A, 0x00, 0x00);      // Switch rows to output
-  _columns->writeRegister(MCP23017Register::INTCON_A, 0xFF, 0xFF);  // Turn interrupts on for columns
-  _rows->writeRegister(MCP23017Register::INTCON_A, 0x00, 0x00);     // Turn interrupts off for rows
-  _columns->writeRegister(MCP23017Register::DEFVAL_A, 0xFF, 0xFF);  // Default value of 1 for columns
-  _rows->writeRegister(MCP23017Register::DEFVAL_A, 0x00, 0x00);     // Default value of 0 for rows
-  _columns->writeRegister(MCP23017Register::GPINTEN_A, 0xFF, 0xFF); // Temporarily enable column interrupts even though they aren't used
-  _rows->writeRegister(MCP23017Register::GPINTEN_A, 0x00, 0x00);    // Temporarily disable row interrupts
+  _columns->writeRegister(MCP23017Register::IODIR_A, 0xFF, 0xFF);  // Switch columns to input
+  _rows->writeRegister(MCP23017Register::IODIR_A, 0x00, 0x00);     // Switch rows to output
+  _columns->writeRegister(MCP23017Register::INTCON_A, 0xFF, 0xFF); // Turn interrupts on for columns
+  _rows->writeRegister(MCP23017Register::INTCON_A, 0x00, 0x00);    // Turn interrupts off for rows
+  _columns->writeRegister(MCP23017Register::DEFVAL_A, 0xFF, 0xFF); // Default value of 1 for columns
+  _rows->writeRegister(MCP23017Register::DEFVAL_A, 0x00, 0x00);    // Default value of 0 for rows
+
+  // Disable row interrupts until the key is released. Without this incorrect interrupts
+  // will get fired while attempting to read the column to find the pressed button,
+  // and interrupts can fire while waiting for a key release which leads to unhandled
+  // interrupts blocking key detection forever.
+  DisableRowInterrupts();
 
   // Write 0s to the rows then read the columns to find out what button is pressed.
   // This step is missing from the application note.
@@ -186,7 +209,8 @@ void KeyboardMatrix::CheckForRelease()
 {
   uint16_t rowState;
 
-  // Try clearing the interrupts by reading the current state for the rows
+  // Read the row state to see if the button was released. This has the side effect
+  // of clearing the interrupt if the triggering pin reset as well.
   rowState = _rows->read();
 
   // If all the inputs for the row are back to 1s then the button was released
@@ -201,7 +225,15 @@ void KeyboardMatrix::CheckForRelease()
 
     _buttonHandler(ButtonState::Released, _activeRow, _activeColumn);
 
+    // Issue 7
+    // The order of these two lines is very important. Interrupts get enabled
+    // after the state machine is reset to waiting for an interrupt. Otherwise
+    // a race condition can (and did!) occur where an interrupt fires and then
+    // the state machine resets back to waiting for an interrupt, resulting
+    // in the interrupt never getting handled and all further key detection
+    // being blocked.
     currentState = WaitingForPress;
+    EnableRowInterrupts();
   }
 }
 
