@@ -36,10 +36,12 @@ private:
   MCP23017 *_rows;
   MCP23017 *_columns;
 
-  static int GetBitPosition(uint16_t value);
-  void InitForRowDetection(bool setPullups);
   void CheckForButton();
   void CheckForRelease();
+  void InitForRowDetection(bool setPullups);
+  void DisableRowInterrupts();
+  void EnableRowInterrupts();
+  static int GetBitPosition(uint16_t value);
 
 public:
   KeyboardMatrix(uint8_t rowAddress, uint8_t columnAddress, uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler);
