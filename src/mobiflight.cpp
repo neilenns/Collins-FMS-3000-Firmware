@@ -294,9 +294,6 @@ void setup()
   cmdMessenger.printLfCr();
 
   OnResetBoard();
-  Serial.println("Delaying 5 seconds...");
-  delay(5000);
-  Serial.println("Initializing...");
   keyboardMatrix.Init();
   ledMatrix.Init();
 }
