@@ -82,7 +82,6 @@ void KeyboardMatrix::EnableRowInterrupts()
 
 void KeyboardMatrix::DisableRowInterrupts()
 {
-  // _columns->writeRegister(MCP23017Register::GPINTEN_A, 0xFF, 0xFF); // Temporarily enable column interrupts even though they aren't used
   _rows->writeRegister(MCP23017Register::GPINTEN_A, 0x00, 0x00); // Disable row interrupts
 }
 
