@@ -1,13 +1,51 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <avr/interrupt.h>
+#include <avr/wdt.h>
+#include <util/atomic.h>
 
-#include <ABMPattern.h>
 #include "LEDMatrix.h"
 
 using namespace IS31FL3733;
 
 uint8_t completedABMCount = 0;
+volatile uint32_t seed;
+volatile int8_t nrot;
+
+// This method of generating a random seed comes from
+// https://sites.google.com/site/astudyofentropy/project-definition/timer-jitter-entropy-sources/entropy-library/arduino-random-seed
+void CreateTrulyRandomSeed()
+{
+  seed = 0;
+  nrot = 32; // Must be at least 4, but more increased the uniformity of the produced
+             // seeds entropy.
+
+  // The following five lines of code turn on the watch dog timer interrupt to create
+  // the seed value
+  cli();
+  MCUSR = 0;
+  _WD_CONTROL_REG |= (1 << _WD_CHANGE_BIT) | (1 << WDE);
+  _WD_CONTROL_REG = (1 << WDIE);
+  sei();
+
+  while (nrot > 0)
+    ; // wait here until seed is created
+
+  // The following five lines turn off the watch dog timer interrupt
+  cli();
+  MCUSR = 0;
+  _WD_CONTROL_REG |= (1 << _WD_CHANGE_BIT) | (0 << WDE);
+  _WD_CONTROL_REG = (0 << WDIE);
+  sei();
+}
+
+ISR(WDT_vect)
+{
+  nrot--;
+  seed = seed << 8;
+  seed = seed ^ TCNT1L;
+}
 
 /**
  * @brief Read a buffer of data from the specified register.
@@ -18,7 +56,7 @@ uint8_t completedABMCount = 0;
  * @param length Length of the buffer.
  * @return uint8_t 
  */
-uint8_t i2c_read_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *buffer, uint8_t length)
+uint8_t i2c_read_reg(const uint8_t i2c_addr, const uint8_t reg_addr, uint8_t *buffer, const uint8_t length)
 {
   Wire.beginTransmission(i2c_addr);
   Wire.write(reg_addr);
@@ -40,7 +78,7 @@ uint8_t i2c_read_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *buffer, uint8_
  * @param count Number of bytes in the buffer.
  * @return uint8_t The number of bytes written.
  */
-uint8_t i2c_write_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *buffer, uint8_t count)
+uint8_t i2c_write_reg(const uint8_t i2c_addr, const uint8_t reg_addr, const uint8_t *buffer, const uint8_t count)
 {
   Wire.beginTransmission(i2c_addr);
   Wire.write(reg_addr);
@@ -78,7 +116,7 @@ void LEDMatrix::HandleInterrupt()
  */
 void LEDMatrix::SetBrightness(uint8_t brightness)
 {
-  driver->SetLEDPWM(CS_LINES, SW_LINES, brightness); // Set PWM for all LEDs to full power.
+  driver->SetLEDMatrixPWM(brightness); // Set PWM for all LEDs to full power.
 }
 
 /**
@@ -97,18 +135,19 @@ void LEDMatrix::Init()
 
   driver->Init();
 
-  driver->SetGCC(127);                                    // Set global current control to half.
-  driver->SetLEDPWM(CS_LINES, SW_LINES, 255);             // Set PWM for all LEDs to full power.
-  driver->SetLEDState(CS_LINES, SW_LINES, LED_STATE::ON); // Turn on all the LEDs.
-  randomSeed(analogRead(0));
+  driver->SetGCC(127);         // Set global current control to half.
+  driver->SetLEDMatrixPWM(10); // Set PWM for all LEDs to full power.
+
+  // Randomly assign one of the three ABM patterns to each button
+  CreateTrulyRandomSeed();
   for (int i = 0; i < CS_LINES; i++)
   {
     for (int j = 0; j < SW_LINES; j++)
     {
-      driver->SetLEDMode(i, j, static_cast<LED_MODE>(random(1, 3)));
+      driver->SetLEDSingleMode(i, j, static_cast<LED_MODE>(random(1, 3)));
     }
   }
-  driver->WritePagedRegs(PAGEDREGISTER::LEDABM, abmPattern, abmPatternSize);
+  driver->SetLEDMatrixState(LED_STATE::ON); // Turn on all the LEDs.
 
   ABM_CONFIG ABM1;
   ABM_CONFIG ABM2;
@@ -142,9 +181,9 @@ void LEDMatrix::Init()
   driver->ConfigABM(ABM_NUM::NUM_2, &ABM2);             // Tell the IC the ABM parameters.
   driver->ConfigABM(ABM_NUM::NUM_3, &ABM3);             // Tell the IC the ABM parameters.
   driver->WriteCommonReg(COMMONREGISTER::IMR, IMR_IAB); // Enable interrupts when ABM completes and auto-clear them after 8ms.
-  driver->StartABM();                                   // Start ABM mode operation.
 
   ledState = LedState::ABMRunning;
+  driver->StartABM(); // Start ABM mode operation.
 }
 
 void LEDMatrix::Loop()
@@ -181,7 +220,7 @@ void LEDMatrix::Loop()
 
     if (completedABMCount == 3)
     {
-      driver->SetLEDMode(CS_LINES, SW_LINES, LED_MODE::PWM);
+      driver->SetLEDMatrixMode(LED_MODE::PWM);
       ledState = LedState::LEDOn;
     }
     break;
