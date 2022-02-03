@@ -98,7 +98,7 @@ uint8_t i2c_write_reg(const uint8_t i2c_addr, const uint8_t reg_addr, const uint
  */
 LEDMatrix::LEDMatrix(ADDR addr1, ADDR addr2, uint8_t sdbPin, uint8_t intbPin, LEDEvent eventHandler)
 {
-  driver = new IS31FL3733Driver(addr1, addr2, &i2c_read_reg, &i2c_write_reg);
+  _driver = new IS31FL3733Driver(addr1, addr2, &i2c_read_reg, &i2c_write_reg);
   _eventHandler = eventHandler;
   _sdbPin = sdbPin;
   _intbPin = intbPin;
@@ -106,7 +106,7 @@ LEDMatrix::LEDMatrix(ADDR addr1, ADDR addr2, uint8_t sdbPin, uint8_t intbPin, LE
 
 void LEDMatrix::HandleInterrupt()
 {
-  ledState = LedState::ABMComplete;
+  _ledState = LedState::ABMComplete;
 }
 
 /**
@@ -116,7 +116,17 @@ void LEDMatrix::HandleInterrupt()
  */
 void LEDMatrix::SetBrightness(uint8_t brightness)
 {
-  driver->SetLEDMatrixPWM(brightness); // Set PWM for all LEDs to full power.
+  _driver->SetLEDMatrixPWM(brightness);
+}
+
+/**
+ * @brief Turns power save mode on or off.
+ * 
+ * @param state True to turn power save mode on, false to turn it off.
+ */
+void LEDMatrix::SetPowerSaveMode(bool state)
+{
+  state ? _ledState = LedState::TurnOnPowerSave : _ledState = LedState::TurnOffPowerSave;
 }
 
 /**
@@ -133,10 +143,10 @@ void LEDMatrix::Init()
   pinMode(_intbPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(_intbPin), _eventHandler, CHANGE);
 
-  driver->Init();
+  _driver->Init();
 
-  driver->SetGCC(127);         // Set global current control to half.
-  driver->SetLEDMatrixPWM(10); // Set PWM for all LEDs to full power.
+  _driver->SetGCC(127); // Set global current control to half.
+  SetBrightness(255);   // Set PWM for all LEDs to full power.
 
   // Randomly assign one of the three ABM patterns to each button
   CreateTrulyRandomSeed();
@@ -144,10 +154,10 @@ void LEDMatrix::Init()
   {
     for (int j = 0; j < SW_LINES; j++)
     {
-      driver->SetLEDSingleMode(i, j, static_cast<LED_MODE>(random(1, 3)));
+      _driver->SetLEDSingleMode(i, j, static_cast<LED_MODE>(random(1, 3)));
     }
   }
-  driver->SetLEDMatrixState(LED_STATE::ON); // Turn on all the LEDs.
+  _driver->SetLEDMatrixState(LED_STATE::ON); // Turn on all the LEDs.
 
   ABM_CONFIG ABM1;
   ABM_CONFIG ABM2;
@@ -177,19 +187,19 @@ void LEDMatrix::Init()
   ABM3.Tend = ABM_LOOP_END::LOOP_END_T3;
   ABM3.Times = 3;
 
-  driver->ConfigABM(ABM_NUM::NUM_1, &ABM1);             // Tell the IC the ABM parameters.
-  driver->ConfigABM(ABM_NUM::NUM_2, &ABM2);             // Tell the IC the ABM parameters.
-  driver->ConfigABM(ABM_NUM::NUM_3, &ABM3);             // Tell the IC the ABM parameters.
-  driver->WriteCommonReg(COMMONREGISTER::IMR, IMR_IAB); // Enable interrupts when ABM completes and auto-clear them after 8ms.
+  _driver->ConfigABM(ABM_NUM::NUM_1, &ABM1);             // Tell the IC the ABM parameters.
+  _driver->ConfigABM(ABM_NUM::NUM_2, &ABM2);             // Tell the IC the ABM parameters.
+  _driver->ConfigABM(ABM_NUM::NUM_3, &ABM3);             // Tell the IC the ABM parameters.
+  _driver->WriteCommonReg(COMMONREGISTER::IMR, IMR_IAB); // Enable interrupts when ABM completes and auto-clear them after 8ms.
 
-  ledState = LedState::ABMRunning;
-  driver->StartABM(); // Start ABM mode operation.
+  _ledState = LedState::ABMRunning;
+  _driver->StartABM(); // Start ABM mode operation.
 }
 
 void LEDMatrix::Loop()
 {
   // Simple finite state machine to switch LEDs on after ABM finishes running.
-  switch (ledState)
+  switch (_ledState)
   {
   case LedState::ABMNotStarted:
   {
@@ -202,7 +212,7 @@ void LEDMatrix::Loop()
   case LedState::ABMComplete:
   {
     // Read the interrupt status to force the interrupt to clear.
-    uint8_t interruptStatus = driver->ReadCommonReg(COMMONREGISTER::ISR);
+    uint8_t interruptStatus = _driver->ReadCommonReg(COMMONREGISTER::ISR);
 
     // Check and see if ABM1 is the ABM that finished.
     if (interruptStatus & ISR_ABM1)
@@ -220,12 +230,28 @@ void LEDMatrix::Loop()
 
     if (completedABMCount == 3)
     {
-      driver->SetLEDMatrixMode(LED_MODE::PWM);
-      ledState = LedState::LEDOn;
+      _driver->SetLEDMatrixMode(LED_MODE::PWM);
+      _ledState = LedState::LEDOn;
     }
     break;
   }
+  case LedState::TurnOnPowerSave:
+  {
+    _driver->SetLEDMatrixState(LED_STATE::OFF);
+    _ledState = LedState::LEDOff;
+    break;
+  }
+  case LedState::TurnOffPowerSave:
+  {
+    _driver->SetLEDMatrixState(LED_STATE::ON);
+    _ledState = LedState::LEDOn;
+    break;
+  }
   case LedState::LEDOn:
+  {
+    break;
+  }
+  case LedState::LEDOff:
   {
     break;
   }
