@@ -26,11 +26,10 @@ enum LedState
 class LEDMatrix
 {
 private:
-  volatile LedState _ledState = LedState::ABMNotStarted;
   IS31FL3733::IS31FL3733Driver *_driver;
-
   LEDEvent _eventHandler;
   uint8_t _intbPin;
+  volatile LedState _ledState = LedState::ABMNotStarted;
   uint8_t _sdbPin;
 
 public:
