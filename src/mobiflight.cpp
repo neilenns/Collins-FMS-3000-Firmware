@@ -33,6 +33,12 @@ constexpr uint8_t LED_INTB_PIN = 7; // Arduino pin connected to to INTB on the L
 // Virtual pins for one-off MobiFlight "modules".
 constexpr uint8_t BRIGHTNESS_PIN = 69;
 
+// Other defines.
+constexpr unsigned long POWER_SAVING_TIME = 300; // 5 minutes (5 * 60 seconds).
+
+unsigned long lastButtonPress = 0;
+bool powerSavingMode = false;
+
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
 KeyboardMatrix keyboardMatrix(ROW_I2C_ADDRESS, COLUMN_I2C_ADDRESS, ROW_INTA_PIN, OnKeyboardEvent, OnButtonPress);
@@ -144,6 +150,8 @@ void generateSerial(bool force)
  */
 void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
 {
+  lastButtonPress = millis();
+
   // While the keyboard matrix provides a row/column location that has to
   // be mapped to a button name to send the correct event to MobiFlight.
   // The button names are in a 1D array and the keyboard matrix is sparse
@@ -280,6 +288,25 @@ void OnSetName()
 }
 
 /**
+ * @brief Checks to see if power saving mode should be enabled or disabled
+ * based on the last time a key was pressed.
+ * 
+ */
+void CheckForPowerSave()
+{
+  if (!powerSavingMode && ((millis() - lastButtonPress) > (POWER_SAVING_TIME * 1000)))
+  {
+    powerSavingMode = true;
+    ledMatrix.SetPowerSaveMode(true);
+  }
+  else if (powerSavingMode && ((millis() - lastButtonPress) < (POWER_SAVING_TIME * 1000)))
+  {
+    ledMatrix.SetPowerSaveMode(false);
+    powerSavingMode = false;
+  }
+}
+
+/**
  * @brief Android initialization method.
  * 
  */
@@ -296,6 +323,8 @@ void setup()
   OnResetBoard();
   keyboardMatrix.Init();
   ledMatrix.Init();
+
+  lastButtonPress = millis();
 }
 
 /**
@@ -306,5 +335,6 @@ void loop()
 {
   cmdMessenger.feedinSerialData();
   keyboardMatrix.Loop();
+  CheckForPowerSave();
   ledMatrix.Loop();
 }
