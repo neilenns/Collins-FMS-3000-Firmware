@@ -37,7 +37,7 @@ constexpr uint8_t LED_INTB_PIN = 7; // Arduino pin connected to to INTB on the L
 constexpr uint8_t BRIGHTNESS_PIN = ButtonNames::ButtonCount;
 
 // Other defines.
-constexpr unsigned long POWER_SAVING_TIME = 60 * 60; // One hour (60 minutes * 60 seconds).
+constexpr unsigned long POWER_SAVING_TIME_SECS = 60 * 60; // One hour (60 minutes * 60 seconds).
 
 unsigned long lastButtonPress = 0;
 bool powerSavingMode = false;
@@ -297,12 +297,12 @@ void OnSetName()
  */
 void CheckForPowerSave()
 {
-  if (!powerSavingMode && ((millis() - lastButtonPress) > (POWER_SAVING_TIME * 1000)))
+  if (!powerSavingMode && ((millis() - lastButtonPress) > (POWER_SAVING_TIME_SECS * 1000)))
   {
     powerSavingMode = true;
     ledMatrix.SetPowerSaveMode(true);
   }
-  else if (powerSavingMode && ((millis() - lastButtonPress) < (POWER_SAVING_TIME * 1000)))
+  else if (powerSavingMode && ((millis() - lastButtonPress) < (POWER_SAVING_TIME_SECS * 1000)))
   {
     ledMatrix.SetPowerSaveMode(false);
     powerSavingMode = false;

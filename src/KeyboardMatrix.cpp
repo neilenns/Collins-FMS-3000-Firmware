@@ -4,9 +4,9 @@
 
 #include "KeyboardMatrix.h"
 
-// Number of milliseconds a key must be presed to be considered
-// a press and hold event.
-constexpr unsigned long PRESS_AND_HOLD_LENGTH = 500;
+constexpr unsigned long PRESS_AND_HOLD_LENGTH_MS = 500; // Length of time a key must be held for a long press.
+
+constexpr unsigned long DEBOUNCE_TIME_MS = 10; // Time between button events in milliseconds.
 
 #ifdef DEBUG
 // Helper function to write a 16 bit value out as bits for debugging purposes.
@@ -156,6 +156,15 @@ void KeyboardMatrix::CheckForButton()
   uint8_t columnPortA, columnPortB;
   uint16_t columnStates;
 
+  // Unfortunately interrupt-based debouncing as described in the application note for the MCP23017
+  // isn't enough to handle key debouncing. This check prevents duplicate key events which are
+  // quite common when just relying on the interrupt method.
+  if ((millis() - _lastPressEventTime) < DEBOUNCE_TIME_MS)
+  {
+    _rows->clearInterrupts();
+    return;
+  }
+
   // Read the current state of all 16 column pins. The board is wired with the low row numbers
   // connected to port B and the high row numbers connected to port A so read the two
   // ports separately then combine them in the right order in a 16-bit number.
@@ -243,7 +252,7 @@ void KeyboardMatrix::CheckForRelease()
     // if the button was held down for press-and-hold behaviour. Row 0 column 1
     // is an unused position in the key matrix that acts as the position of
     // the DEL key when CLR/DEL is press and held.
-    if ((_activeRow == 8) && (_activeColumn == 11) && ((millis() - _lastPressEventTime) > PRESS_AND_HOLD_LENGTH))
+    if ((_activeRow == 8) && (_activeColumn == 11) && ((millis() - _lastPressEventTime) > PRESS_AND_HOLD_LENGTH_MS))
     {
       _activeRow = 0;
       _activeColumn = 1;
