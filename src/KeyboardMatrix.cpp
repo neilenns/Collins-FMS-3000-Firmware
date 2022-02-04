@@ -8,6 +8,8 @@
 // a press and hold event.
 constexpr unsigned long PRESS_AND_HOLD_LENGTH = 500;
 
+#ifdef DEBUG
+// Helper function to write a 16 bit value out as bits for debugging purposes.
 void write16AsBits(uint16_t value)
 {
   for (int i = 0; i < 8; i++)
@@ -26,6 +28,7 @@ void write16AsBits(uint16_t value)
   }
 }
 
+// Helper function to write an 8 bit value out as bits for debugging purposes.
 void write8AsBits(uint8_t value)
 {
   for (int i = 0; i < 8; i++)
@@ -35,6 +38,7 @@ void write8AsBits(uint8_t value)
     value = value << 1;
   }
 }
+#endif
 
 KeyboardMatrix::KeyboardMatrix(uint8_t rowAddress, uint8_t columnAddress, uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler)
 {
