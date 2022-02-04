@@ -27,11 +27,14 @@ constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // Column MCP23017.
 
 // Arduino pin mappings.
 constexpr uint8_t ROW_INTA_PIN = 0; // Row interrupts pin.
-constexpr uint8_t LED_SDB_PIN = 4;  // Arduino pin connected to SDB on the LED driver. Blue jumper wire.
+constexpr uint8_t LED_SDB_PIN = 4;  // Arduino pin connected to SDB on the LED driver.
 constexpr uint8_t LED_INTB_PIN = 7; // Arduino pin connected to to INTB on the LED driver.
 
-// Virtual pins for one-off MobiFlight "modules".
-constexpr uint8_t BRIGHTNESS_PIN = 69;
+// Virtual pins for one-off MobiFlight "modules". Their pins
+// start after all the keyboard matrix buttons, of which there are
+// ButtonNames::ButtonCount. Since it's origin zero the next free pin
+// is simply that value.
+constexpr uint8_t BRIGHTNESS_PIN = ButtonNames::ButtonCount;
 
 // Other defines.
 constexpr unsigned long POWER_SAVING_TIME = 300; // 5 minutes (5 * 60 seconds).
@@ -226,8 +229,8 @@ void OnGetConfig()
   cmdMessenger.sendCmdStart(MFMessage::kInfo);
   cmdMessenger.sendFieldSeparator();
 
-  // Send configuration for all 69 buttons.
-  for (i = 0; i < 69; i++)
+  // Send configuration for all the buttons
+  for (i = 0; i < ButtonNames::ButtonCount; i++)
   {
     // Get the pin name from flash
     strcpy_P(pinName, (char *)pgm_read_word(&(ButtonNames::Names[i])));

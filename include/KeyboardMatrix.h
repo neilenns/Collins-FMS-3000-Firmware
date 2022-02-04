@@ -30,8 +30,9 @@ private:
   volatile DetectionState currentState = DetectionState::WaitingForPress;
   uint8_t _activeRow = 0;
   uint8_t _activeColumn = 0;
-  KeyboardEvent _interruptHandler;
   ButtonEvent _buttonHandler;
+  KeyboardEvent _interruptHandler;
+  unsigned long _lastPressEventTime;
 
   MCP23017 *_rows;
   MCP23017 *_columns;
