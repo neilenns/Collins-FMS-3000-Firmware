@@ -4,6 +4,12 @@
 
 #include "KeyboardMatrix.h"
 
+// Number of milliseconds a key must be presed to be considered
+// a press and hold event.
+constexpr unsigned long PRESS_AND_HOLD_LENGTH = 500;
+
+#ifdef DEBUG
+// Helper function to write a 16 bit value out as bits for debugging purposes.
 void write16AsBits(uint16_t value)
 {
   for (int i = 0; i < 8; i++)
@@ -22,6 +28,7 @@ void write16AsBits(uint16_t value)
   }
 }
 
+// Helper function to write an 8 bit value out as bits for debugging purposes.
 void write8AsBits(uint8_t value)
 {
   for (int i = 0; i < 8; i++)
@@ -31,6 +38,7 @@ void write8AsBits(uint8_t value)
     value = value << 1;
   }
 }
+#endif
 
 KeyboardMatrix::KeyboardMatrix(uint8_t rowAddress, uint8_t columnAddress, uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler)
 {
@@ -68,9 +76,9 @@ int KeyboardMatrix::GetBitPosition(uint16_t value)
  */
 void KeyboardMatrix::HandleInterrupt()
 {
-  if (currentState == WaitingForPress)
+  if (_currentState == WaitingForPress)
   {
-    currentState = DetectionState::PressDetected;
+    _currentState = DetectionState::PressDetected;
   }
 }
 
@@ -134,7 +142,7 @@ void KeyboardMatrix::Init()
   _rows->interruptMode(MCP23017InterruptMode::Or); // Interrupt on one line
   EnableRowInterrupts();
   _rows->clearInterrupts(); // Clear all interrupts which could come from initialization
-  currentState = DetectionState::WaitingForPress;
+  _currentState = DetectionState::WaitingForPress;
 }
 
 /**
@@ -188,14 +196,23 @@ void KeyboardMatrix::CheckForButton()
   Serial.print(_activeRow);
   Serial.print(" column: ");
   Serial.println(_activeColumn);
-  currentState = WaitingForPress;
 #endif
 
-  _buttonHandler(ButtonState::Pressed, _activeRow, _activeColumn);
+  // The CLR/DEL key is in row 8 column 11 and is special. To support press-and-hold and
+  // match actual aircraft behaviour it should only send release events. This check ensures
+  // the press event fires for all other keys.
+  if ((_activeRow != 8) || (_activeColumn != 11))
+  {
+    _buttonHandler(ButtonState::Pressed, _activeRow, _activeColumn);
+  }
+
+  // Save when the press event happened so a test can be done on release
+  // to look for a press-and-hold on the CLR/DEL key.
+  _lastPressEventTime = millis();
 
   // Flip all the registers back to the default configuration to look for
   // when the row clears.
-  currentState = WaitingForRelease;
+  _currentState = WaitingForRelease;
   InitForRowDetection(false);
 }
 
@@ -222,6 +239,16 @@ void KeyboardMatrix::CheckForRelease()
     Serial.println(_activeColumn);
 #endif
 
+    // The CLR/DEL key in row 8 column 11 is special and send a different row/column position
+    // if the button was held down for press-and-hold behaviour. Row 0 column 1
+    // is an unused position in the key matrix that acts as the position of
+    // the DEL key when CLR/DEL is press and held.
+    if ((_activeRow == 8) && (_activeColumn == 11) && ((millis() - _lastPressEventTime) > PRESS_AND_HOLD_LENGTH))
+    {
+      _activeRow = 0;
+      _activeColumn = 1;
+    }
+
     _buttonHandler(ButtonState::Released, _activeRow, _activeColumn);
 
     // Issue 7
@@ -231,7 +258,7 @@ void KeyboardMatrix::CheckForRelease()
     // the state machine resets back to waiting for an interrupt, resulting
     // in the interrupt never getting handled and all further key detection
     // being blocked.
-    currentState = WaitingForPress;
+    _currentState = WaitingForPress;
     EnableRowInterrupts();
   }
 }
@@ -239,7 +266,7 @@ void KeyboardMatrix::CheckForRelease()
 void KeyboardMatrix::Loop()
 {
   // Fininte state machine for button detection
-  switch (currentState)
+  switch (_currentState)
   {
   case WaitingForPress:
     // Nothing to do here, interrupts will handle it

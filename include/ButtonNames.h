@@ -9,7 +9,7 @@ namespace ButtonNames
 {
     constexpr uint8_t RowColumnLUT[12][12] PROGMEM = {
         {0,
-         255,
+         69, // This is a special entry for the press-and-hold action on the CLR key to send DEL.
          255,
          255,
          255,
@@ -224,8 +224,11 @@ namespace ButtonNames
     constexpr char SW67[] PROGMEM = "CLR";
     constexpr char SW68[] PROGMEM = "BRT";
     constexpr char SW69[] PROGMEM = "DIM";
+    constexpr char SW70[] PROGMEM = "DEL";
 
-    const char *const Names[] PROGMEM = {
+    constexpr uint8_t ButtonCount = 70;
+
+    const char *const Names[ButtonCount] PROGMEM = {
         SW1,
         SW2,
         SW3,
@@ -294,5 +297,6 @@ namespace ButtonNames
         SW66,
         SW67,
         SW68,
-        SW69};
+        SW69,
+        SW70};
 }
