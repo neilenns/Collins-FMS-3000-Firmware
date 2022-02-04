@@ -200,7 +200,7 @@ void KeyboardMatrix::CheckForButton()
 
   // The CLR/DEL key is in row 8 column 11 and is special. To support press-and-hold and
   // match actual aircraft behaviour it should only send release events. This check ensures
-  // the press event only fires for all other keys.
+  // the press event fires for all other keys.
   if ((_activeRow != 8) || (_activeColumn != 11))
   {
     _buttonHandler(ButtonState::Pressed, _activeRow, _activeColumn);
