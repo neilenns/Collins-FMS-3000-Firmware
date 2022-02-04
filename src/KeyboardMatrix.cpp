@@ -72,9 +72,9 @@ int KeyboardMatrix::GetBitPosition(uint16_t value)
  */
 void KeyboardMatrix::HandleInterrupt()
 {
-  if (currentState == WaitingForPress)
+  if (_currentState == WaitingForPress)
   {
-    currentState = DetectionState::PressDetected;
+    _currentState = DetectionState::PressDetected;
   }
 }
 
@@ -138,7 +138,7 @@ void KeyboardMatrix::Init()
   _rows->interruptMode(MCP23017InterruptMode::Or); // Interrupt on one line
   EnableRowInterrupts();
   _rows->clearInterrupts(); // Clear all interrupts which could come from initialization
-  currentState = DetectionState::WaitingForPress;
+  _currentState = DetectionState::WaitingForPress;
 }
 
 /**
@@ -208,7 +208,7 @@ void KeyboardMatrix::CheckForButton()
 
   // Flip all the registers back to the default configuration to look for
   // when the row clears.
-  currentState = WaitingForRelease;
+  _currentState = WaitingForRelease;
   InitForRowDetection(false);
 }
 
@@ -254,7 +254,7 @@ void KeyboardMatrix::CheckForRelease()
     // the state machine resets back to waiting for an interrupt, resulting
     // in the interrupt never getting handled and all further key detection
     // being blocked.
-    currentState = WaitingForPress;
+    _currentState = WaitingForPress;
     EnableRowInterrupts();
   }
 }
@@ -262,7 +262,7 @@ void KeyboardMatrix::CheckForRelease()
 void KeyboardMatrix::Loop()
 {
   // Fininte state machine for button detection
-  switch (currentState)
+  switch (_currentState)
   {
   case WaitingForPress:
     // Nothing to do here, interrupts will handle it

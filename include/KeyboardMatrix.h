@@ -26,12 +26,12 @@ extern "C"
 class KeyboardMatrix
 {
 private:
-  uint8_t _interruptPin;
-  volatile DetectionState currentState = DetectionState::WaitingForPress;
   uint8_t _activeRow = 0;
   uint8_t _activeColumn = 0;
   ButtonEvent _buttonHandler;
+  volatile DetectionState _currentState = DetectionState::WaitingForPress;
   KeyboardEvent _interruptHandler;
+  uint8_t _interruptPin;
   unsigned long _lastPressEventTime;
 
   MCP23017 *_rows;
