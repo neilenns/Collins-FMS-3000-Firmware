@@ -37,7 +37,7 @@ constexpr uint8_t LED_INTB_PIN = 7; // Arduino pin connected to to INTB on the L
 constexpr uint8_t BRIGHTNESS_PIN = ButtonNames::ButtonCount;
 
 // Other defines.
-constexpr unsigned long POWER_SAVING_TIME = 300; // 5 minutes (5 * 60 seconds).
+constexpr unsigned long POWER_SAVING_TIME = 60 * 60; // One hour (60 minutes * 60 seconds).
 
 unsigned long lastButtonPress = 0;
 bool powerSavingMode = false;
