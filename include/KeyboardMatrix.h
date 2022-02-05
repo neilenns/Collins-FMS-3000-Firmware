@@ -41,6 +41,7 @@ private:
   void CheckForRelease();
   void InitForRowDetection(bool setPullups);
   void DisableRowInterrupts();
+  void EnableColumnInterrupts();
   void EnableRowInterrupts();
   static int GetBitPosition(uint16_t value);
 
