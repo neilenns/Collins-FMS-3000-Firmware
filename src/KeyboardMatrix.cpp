@@ -4,9 +4,8 @@
 
 #include "KeyboardMatrix.h"
 
+constexpr unsigned long DEBOUNCE_TIME_MS = 10;          // Time between button events in milliseconds.
 constexpr unsigned long PRESS_AND_HOLD_LENGTH_MS = 500; // Length of time a key must be held for a long press.
-
-constexpr unsigned long DEBOUNCE_TIME_MS = 10; // Time between button events in milliseconds.
 
 #ifdef DEBUG
 // Helper function to write a 16 bit value out as bits for debugging purposes.
@@ -51,7 +50,7 @@ KeyboardMatrix::KeyboardMatrix(uint8_t rowAddress, uint8_t columnAddress, uint8_
 
 /**
  * @brief Get the bit position for a single low bit in a byte.
- * 
+ *
  * @param value The byte to check, with the active bit set to low and inactive bits set high
  * @return int The position of the single low bit in the byte
  */
@@ -72,7 +71,7 @@ int KeyboardMatrix::GetBitPosition(uint16_t value)
 
 /**
  * @brief Interrupt handler for when the row changed interrupt fires.
- * 
+ *
  */
 void KeyboardMatrix::HandleInterrupt()
 {
@@ -82,9 +81,13 @@ void KeyboardMatrix::HandleInterrupt()
   }
 }
 
+void KeyboardMatrix::EnableColumnInterrupts()
+{
+  _columns->writeRegister(MCP23017Register::GPINTEN_A, 0xFF, 0xFF); // Turn on the interrupts for the columns
+}
+
 void KeyboardMatrix::EnableRowInterrupts()
 {
-  // Turn on interrupts
   _rows->writeRegister(MCP23017Register::GPINTEN_A, 0xFF, 0xFF); // Turn on the interrupts for the rows
 }
 
@@ -95,7 +98,7 @@ void KeyboardMatrix::DisableRowInterrupts()
 
 /**
  * @brief Initializes the MCP23017 to detect interrupts on row changes.
- * 
+ *
  * @param setPullups True if the pullup resistors should get configured. This only needs to happen once when the chip
  * is first initialized at board startup.
  */
@@ -120,7 +123,7 @@ void KeyboardMatrix::InitForRowDetection(bool setPullups)
 
 /**
  * @brief initializes the keyboard matrix.
- * 
+ *
  */
 void KeyboardMatrix::Init()
 {
@@ -140,45 +143,38 @@ void KeyboardMatrix::Init()
   // in the rare case that an interrupt fires immediately after initialization
   // that the state machine won't miss it.
   _rows->interruptMode(MCP23017InterruptMode::Or); // Interrupt on one line
+
+  // Enable row and column interrupts
   EnableRowInterrupts();
+  EnableColumnInterrupts();
+
   _rows->clearInterrupts(); // Clear all interrupts which could come from initialization
+  _columns->clearInterrupts();
   _currentState = DetectionState::WaitingForPress;
 }
 
 /**
  * @brief Determines which button is currently pressed when a row changed interrupt fires.
- * 
+ *
  */
 void KeyboardMatrix::CheckForButton()
 {
-  uint8_t rowPortA, rowPortB;
+  uint8_t rowIntfA, rowIntfB;
   uint16_t rowStates;
-  uint8_t columnPortA, columnPortB;
+  uint8_t columnIntfA, columnIntfB;
   uint16_t columnStates;
 
-  // Unfortunately interrupt-based debouncing as described in the application note for the MCP23017
-  // isn't enough to handle key debouncing. This check prevents duplicate key events which are
-  // quite common when just relying on the interrupt method.
-  if ((millis() - _lastPressEventTime) < DEBOUNCE_TIME_MS)
-  {
-    _rows->clearInterrupts();
-    return;
-  }
+  // Read the INTF registers to figure out which pin caused the interrupt. INTF is
+  // used isntead of GPIO to cover the case of the button bouncing and reading 0 by the
+  // time the code gets to read the GPIO pins. INTCAP can't be used either because
+  // only INTCAP_A or INTCAP_B updates on an interrupt (depending on which port caused it),
+  // and there's no way to clear them.
+  _rows->readRegister(MCP23017Register::INTF_A, rowIntfA, rowIntfB);
 
-  // Read the current state of all 16 column pins. The board is wired with the low row numbers
-  // connected to port B and the high row numbers connected to port A so read the two
-  // ports separately then combine them in the right order in a 16-bit number.
-  rowPortA = _rows->readPort(MCP23017Port::A);
-  rowPortB = _rows->readPort(MCP23017Port::B);
-  rowStates = (rowPortA << 8) | rowPortB;
-
-  // Once the row is known reconfigure a bunch of registers to read the active column
-  _columns->writeRegister(MCP23017Register::IODIR_A, 0xFF, 0xFF);  // Switch columns to input
-  _rows->writeRegister(MCP23017Register::IODIR_A, 0x00, 0x00);     // Switch rows to output
-  _columns->writeRegister(MCP23017Register::INTCON_A, 0xFF, 0xFF); // Turn interrupts on for columns
-  _rows->writeRegister(MCP23017Register::INTCON_A, 0x00, 0x00);    // Turn interrupts off for rows
-  _columns->writeRegister(MCP23017Register::DEFVAL_A, 0xFF, 0xFF); // Default value of 1 for columns
-  _rows->writeRegister(MCP23017Register::DEFVAL_A, 0x00, 0x00);    // Default value of 0 for rows
+  // The port A values are the high byte of the row state. Since the INTF registers
+  // use a 1 to indicate the pin that fired the interrupt and Arduinos expect a 0
+  // on a button press the entire value gets inverted.
+  rowStates = ~((rowIntfA) << 8 | rowIntfB);
 
   // Disable row interrupts until the key is released. Without this incorrect interrupts
   // will get fired while attempting to read the column to find the pressed button,
@@ -190,12 +186,26 @@ void KeyboardMatrix::CheckForButton()
   // This step is missing from the application note.
   _rows->write(0x0000);
 
-  // Read the current state of all 16 column pins. The board is wired with the low column
-  // numbers connected to port B and the high column numbers connected to port A so read the two
-  // ports separately then combine them in the right order in a 16-bit number.
-  columnPortA = _columns->readPort(MCP23017Port::A);
-  columnPortB = _columns->readPort(MCP23017Port::B);
-  columnStates = (columnPortA << 8) | columnPortB;
+  // Once the row is known reconfigure a bunch of registers to read the active column
+  _columns->writeRegister(MCP23017Register::IODIR_A, 0xFF, 0xFF);  // Switch columns to input
+  _rows->writeRegister(MCP23017Register::IODIR_A, 0x00, 0x00);     // Switch rows to output
+  _columns->writeRegister(MCP23017Register::INTCON_A, 0xFF, 0xFF); // Turn interrupts on for columns
+  _rows->writeRegister(MCP23017Register::INTCON_A, 0x00, 0x00);    // Turn interrupts off for rows
+  _columns->writeRegister(MCP23017Register::DEFVAL_A, 0xFF, 0xFF); // Default value of 1 for columns
+  _rows->writeRegister(MCP23017Register::DEFVAL_A, 0x00, 0x00);    // Default value of 0 for rows
+
+  // Clear any old column interrupts.
+  _columns->clearInterrupts();
+
+  // Read the current state of all 16 column pins. As with rows this is done by reading
+  // the INTF registers instead of the GPIO registers to try and deal with button bounce.
+  // Unfortunately it is possible for the interrupt to not have fired by the time this line
+  // of code is called, resulting in an incorrect column value of 0. Since the actual
+  // interrupt pins of the chip aren't wired up on the PCB there's no way to use a real
+  // interrupt handler to do this column read :(
+  _columns->readRegister(MCP23017Register::INTF_A, columnIntfA, columnIntfB);
+
+  columnStates = ~((columnIntfA << 8) | columnIntfB);
 
   _activeRow = KeyboardMatrix::GetBitPosition(rowStates);
   _activeColumn = KeyboardMatrix::GetBitPosition(columnStates);
@@ -228,7 +238,7 @@ void KeyboardMatrix::CheckForButton()
 /**
  * @brief Determines when a button was released by watching for the row port to reset
  * to all 1s.
- * 
+ *
  */
 void KeyboardMatrix::CheckForRelease()
 {
@@ -274,6 +284,14 @@ void KeyboardMatrix::CheckForRelease()
 
 void KeyboardMatrix::Loop()
 {
+  // Unfortunately interrupt-based debouncing as described in the application note for the MCP23017
+  // isn't enough to handle key debouncing. This check prevents duplicate key events which are
+  // quite common when just relying on the interrupt method.
+  if ((millis() - _lastPressEventTime) < DEBOUNCE_TIME_MS)
+  {
+    return;
+  }
+
   // Fininte state machine for button detection
   switch (_currentState)
   {
