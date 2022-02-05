@@ -81,11 +81,6 @@ void KeyboardMatrix::HandleInterrupt()
   }
 }
 
-void KeyboardMatrix::EnableColumnInterrupts()
-{
-  _columns->writeRegister(MCP23017Register::GPINTEN_A, 0xFF, 0xFF); // Turn on the interrupts for the columns
-}
-
 void KeyboardMatrix::EnableRowInterrupts()
 {
   _rows->writeRegister(MCP23017Register::GPINTEN_A, 0xFF, 0xFF); // Turn on the interrupts for the rows
@@ -146,10 +141,8 @@ void KeyboardMatrix::Init()
 
   // Enable row and column interrupts
   EnableRowInterrupts();
-  EnableColumnInterrupts();
 
   _rows->clearInterrupts(); // Clear all interrupts which could come from initialization
-  _columns->clearInterrupts();
   _currentState = DetectionState::WaitingForPress;
 }
 
@@ -164,6 +157,8 @@ void KeyboardMatrix::CheckForButton()
   uint8_t columnIntfA, columnIntfB;
   uint16_t columnStates;
 
+  columnStates = 0xFFFF;
+
   // Read the INTF registers to figure out which pin caused the interrupt. INTF is
   // used isntead of GPIO to cover the case of the button bouncing and reading 0 by the
   // time the code gets to read the GPIO pins. INTCAP can't be used either because
@@ -176,16 +171,6 @@ void KeyboardMatrix::CheckForButton()
   // on a button press the entire value gets inverted.
   rowStates = ~((rowIntfA) << 8 | rowIntfB);
 
-  // Disable row interrupts until the key is released. Without this incorrect interrupts
-  // will get fired while attempting to read the column to find the pressed button,
-  // and interrupts can fire while waiting for a key release which leads to unhandled
-  // interrupts blocking key detection forever.
-  DisableRowInterrupts();
-
-  // Write 0s to the rows then read the columns to find out what button is pressed.
-  // This step is missing from the application note.
-  _rows->write(0x0000);
-
   // Once the row is known reconfigure a bunch of registers to read the active column
   _columns->writeRegister(MCP23017Register::IODIR_A, 0xFF, 0xFF);  // Switch columns to input
   _rows->writeRegister(MCP23017Register::IODIR_A, 0x00, 0x00);     // Switch rows to output
@@ -194,18 +179,31 @@ void KeyboardMatrix::CheckForButton()
   _columns->writeRegister(MCP23017Register::DEFVAL_A, 0xFF, 0xFF); // Default value of 1 for columns
   _rows->writeRegister(MCP23017Register::DEFVAL_A, 0x00, 0x00);    // Default value of 0 for rows
 
-  // Clear any old column interrupts.
-  _columns->clearInterrupts();
+  // Write 0s to the rows then read the columns to find out what button is pressed.
+  // This step is missing from the application note.
+  _rows->write(0x0000);
 
-  // Read the current state of all 16 column pins. As with rows this is done by reading
-  // the INTF registers instead of the GPIO registers to try and deal with button bounce.
-  // Unfortunately it is possible for the interrupt to not have fired by the time this line
-  // of code is called, resulting in an incorrect column value of 0. Since the actual
-  // interrupt pins of the chip aren't wired up on the PCB there's no way to use a real
-  // interrupt handler to do this column read :(
-  _columns->readRegister(MCP23017Register::INTF_A, columnIntfA, columnIntfB);
+  // Disable row interrupts until the key is released. Without this incorrect interrupts
+  // will get fired while attempting to read the column to find the pressed button,
+  // and interrupts can fire while waiting for a key release which leads to unhandled
+  // interrupts blocking key detection forever.
+  DisableRowInterrupts();
 
-  columnStates = ~((columnIntfA << 8) | columnIntfB);
+  // Read the current state of all 16 column pins. This is an ugly hack to handle
+  // key bounce. If reading the ports shows everything as 1s then it means the key
+  // isn't pressed but should be. Keep looping until it is and read that value.
+  // Technically this means it's possible to wind up in a state where this while loop
+  // never exits because somehow between reading the row value and trying to get the
+  // column the button was released. That seems incredibly unlikely.
+  // This could all be avoided if the PCB had the INTA/B pin on the column MCP23017
+  // connected to the microcontroller and real interrupts could be used. Unfortunately
+  // it isn't so this is what we're left with.
+  while (columnStates == 0xFFFF)
+  {
+    columnIntfA = _columns->readPort(MCP23017Port::A);
+    columnIntfB = _columns->readPort(MCP23017Port::B);
+    columnStates = (columnIntfA << 8) | columnIntfB;
+  }
 
   _activeRow = KeyboardMatrix::GetBitPosition(rowStates);
   _activeColumn = KeyboardMatrix::GetBitPosition(columnStates);
