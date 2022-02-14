@@ -49,7 +49,7 @@ LEDMatrix ledMatrix(ADDR::GND, ADDR::GND, LED_SDB_PIN, LED_INTB_PIN, OnLEDEvent)
 
 /**
  * @brief Registers callbacks for all supported MobiFlight commands.
- * 
+ *
  */
 void attachCommandCallbacks()
 {
@@ -70,7 +70,7 @@ void attachCommandCallbacks()
 
 /**
  * @brief Handles an interrupt from the LEDMatrix.
- * 
+ *
  */
 void OnLEDEvent()
 {
@@ -79,7 +79,7 @@ void OnLEDEvent()
 
 /**
  * @brief Handles an interrupt from the KeyboardMatrix.
- * 
+ *
  */
 void OnKeyboardEvent()
 {
@@ -88,7 +88,7 @@ void OnKeyboardEvent()
 
 /**
  * @brief General callback to simply respond OK to the desktop app for unsupported commands.
- * 
+ *
  */
 void SendOk()
 {
@@ -97,7 +97,7 @@ void SendOk()
 
 /**
  * @brief Callback for the MobiFlight event. This doesn't have to do anything so just report success.
- * 
+ *
  */
 void OnSaveConfig()
 {
@@ -106,7 +106,7 @@ void OnSaveConfig()
 
 /**
  * @brief Callback for the MobiFlight event. This doesn't have to do anything so just report success.
- * 
+ *
  */
 void OnActivateConfig()
 {
@@ -116,7 +116,7 @@ void OnActivateConfig()
 /**
  * @brief Loads or generates a new board serial number. Sends a kConfigActivated
  * message to MobiFlight for compatibility purposes.
- * 
+ *
  */
 void OnResetBoard()
 {
@@ -130,8 +130,8 @@ void OnResetBoard()
 /**
  * @brief Loads the board serial number from EEPROM and generates a new one if force is set to true
  * or no serial number was present in EEPROM.
- * 
- * @param force True if a new serial number should be created even if one already exists. 
+ *
+ * @param force True if a new serial number should be created even if one already exists.
  */
 void generateSerial(bool force)
 {
@@ -146,7 +146,7 @@ void generateSerial(bool force)
 
 /**
  * @brief Callback for handling a button press from the keyboard matrix.
- * 
+ *
  * @param state State of the button (pressed or released)
  * @param row Row of the button
  * @param column Column of the button
@@ -185,7 +185,7 @@ void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
  * @brief Callback for setting the board configuration. Since the board configuration is fixed
  * any requests from MobiFlight to set the config are simply ignored and a remaining byte count of
  * 512 is sent back to keep the desktop app happy.
- * 
+ *
  */
 void OnSetConfig()
 {
@@ -194,7 +194,7 @@ void OnSetConfig()
 
 /**
  * @brief Callback for unknown commands.
- * 
+ *
  */
 void OnUnknownCommand()
 {
@@ -203,7 +203,7 @@ void OnUnknownCommand()
 
 /**
  * @brief Callback for sending the board information to MobiFlight.
- * 
+ *
  */
 void OnGetInfo()
 {
@@ -218,37 +218,16 @@ void OnGetInfo()
 /**
  * @brief Callback for sending module configuration to MobiFlight.
  * The module configuration is generated on the fly rather than being stored in EEPROM.
- * 
+ *
  */
 void OnGetConfig()
 {
-  auto i = 0;
-  char singleModule[20] = "";
-  char pinName[ButtonNames::MaxNameLength] = "";
-
-  cmdMessenger.sendCmdStart(MFMessage::kInfo);
-  cmdMessenger.sendFieldSeparator();
-
-  // Send configuration for all the buttons
-  for (i = 0; i < ButtonNames::ButtonCount; i++)
-  {
-    // Get the pin name from flash
-    strcpy_P(pinName, (char *)pgm_read_word(&(ButtonNames::Names[i])));
-
-    snprintf(singleModule, 20, "%i.%i.%s:", MFDevice::kTypeButton, i, pinName);
-    cmdMessenger.sendArg(singleModule);
-  }
-
-  // Send configuration for a single output that's used to control LED brightness
-  snprintf(singleModule, 20, "%i.%i.Brightness:", MFDevice::kTypeOutput, BRIGHTNESS_PIN);
-  cmdMessenger.sendArg(singleModule);
-
-  cmdMessenger.sendCmdEnd();
+  Serial.println(F("10,1.0.L1:1.1.L2:1.2.L3:1.3.L4:1.4.L5:1.5.L6:1.6.MSG:1.7.DIR:1.8.IDX:1.9.TUN:1.10.A:1.11.H:1.12.O:1.13.V:1.14.FPLN:1.15.B:1.16.I:1.17.P:1.18.W:1.19.LEGS:1.20.C:1.21.J:1.22.Q:1.23.X:1.24.DEPARR:1.25.D:1.26.K:1.27.R:1.28.Y:1.29.PERF:1.30.E:1.31.L:1.32.S:1.33.Z:1.34.DSPL_MENU:1.35.F:1.36.M:1.37.T:1.38.SP:1.39.MFD_ADV:1.40.G:1.41.N:1.42.U:1.43.DIV:1.44.MFD_DATA:1.45.1:1.46.4:1.47.7:1.48.DOT:1.49.PREVPAGE:1.50.2:1.51.5:1.52.8:1.53.0:1.54.3:1.55.6:1.56.9:1.57.PLUSMINUS:1.58.R1:1.59.R2:1.60.R3:1.61.R4:1.62.R5:1.63.R6:1.64.EXEC:1.65.NEXTPAGE:1.66.CLR:1.67.BRT:1.68.DIM:1.69.DEL:3.70.Brightness:;"));
 }
 
 /**
  * @brief Callback for MobiFlight LED output commands.
- * 
+ *
  */
 void OnSetPin()
 {
@@ -266,7 +245,7 @@ void OnSetPin()
 
 /**
  * @brief Generates a new serial number for the board and stores it in EEPROM.
- * 
+ *
  */
 void OnGenNewSerial()
 {
@@ -279,7 +258,7 @@ void OnGenNewSerial()
 /**
  * @brief Stubbed out method to accept the name argument then discard it. The name
  * is actually hardcoded in the firmware.
- * 
+ *
  */
 void OnSetName()
 {
@@ -293,7 +272,7 @@ void OnSetName()
 /**
  * @brief Checks to see if power saving mode should be enabled or disabled
  * based on the last time a key was pressed.
- * 
+ *
  */
 void CheckForPowerSave()
 {
@@ -311,7 +290,7 @@ void CheckForPowerSave()
 
 /**
  * @brief Android initialization method.
- * 
+ *
  */
 void setup()
 {
@@ -332,7 +311,7 @@ void setup()
 
 /**
  * @brief Arduino application loop.
- * 
+ *
  */
 void loop()
 {
