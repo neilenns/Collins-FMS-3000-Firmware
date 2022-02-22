@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <MFBoards.h>
 #include <Wire.h>
 
 #include "ButtonNames.h"
@@ -17,27 +16,27 @@
 // MobiFlight expects a board name, type, and serial number to come from the board
 // when requested. The serial number is stored in flash. The board type
 // and name are fixed and come from Board.h.
-constexpr uint8_t MEM_OFFSET_SERIAL = 0;
-constexpr uint8_t MEM_LEN_SERIAL = 11;
+static constexpr uint8_t MEM_OFFSET_SERIAL = 0;
+static constexpr uint8_t MEM_LEN_SERIAL = 11;
 char serial[MEM_LEN_SERIAL];
 
 // I2C Addresses for the row and column IO expanders.
-constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // Row MCP23017.
-constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // Column MCP23017.
+static constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // Row MCP23017.
+static constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // Column MCP23017.
 
 // Arduino pin mappings.
-constexpr uint8_t ROW_INTA_PIN = 0; // Row interrupts pin.
-constexpr uint8_t LED_SDB_PIN = 4;  // Arduino pin connected to SDB on the LED driver.
-constexpr uint8_t LED_INTB_PIN = 7; // Arduino pin connected to to INTB on the LED driver.
+static constexpr uint8_t ROW_INTA_PIN = 0; // Row interrupts pin.
+static constexpr uint8_t LED_SDB_PIN = 4;  // Arduino pin connected to SDB on the LED driver.
+static constexpr uint8_t LED_INTB_PIN = 7; // Arduino pin connected to to INTB on the LED driver.
 
 // Virtual pins for one-off MobiFlight "modules". Their pins
 // start after all the keyboard matrix buttons, of which there are
 // ButtonNames::ButtonCount. Since it's origin zero the next free pin
 // is simply that value.
-constexpr uint8_t BRIGHTNESS_PIN = ButtonNames::ButtonCount;
+static constexpr uint8_t BRIGHTNESS_PIN = ButtonNames::ButtonCount;
 
 // Other defines.
-constexpr unsigned long POWER_SAVING_TIME_SECS = 60 * 60; // One hour (60 minutes * 60 seconds).
+static constexpr unsigned long POWER_SAVING_TIME_SECS = 60 * 60; // One hour (60 minutes * 60 seconds).
 
 unsigned long lastButtonPress = 0;
 bool powerSavingMode = false;
@@ -208,8 +207,8 @@ void OnUnknownCommand()
 void OnGetInfo()
 {
   cmdMessenger.sendCmdStart(MFMessage::kInfo);
-  cmdMessenger.sendCmdArg(MOBIFLIGHT_TYPE);
-  cmdMessenger.sendCmdArg(MOBIFLIGHT_NAME);
+  cmdMessenger.sendCmdArg(F("Collins FMS 3000"));
+  cmdMessenger.sendCmdArg(F("Collins FMS 3000"));
   cmdMessenger.sendCmdArg(serial);
   cmdMessenger.sendCmdArg(VERSION);
   cmdMessenger.sendCmdEnd();
@@ -265,7 +264,7 @@ void OnSetName()
   cmdMessenger.readStringArg();
 
   cmdMessenger.sendCmdStart(MFMessage::kStatus);
-  cmdMessenger.sendCmdArg(MOBIFLIGHT_NAME);
+  cmdMessenger.sendCmdArg(F("Collins FMS 3000"));
   cmdMessenger.sendCmdEnd();
 }
 
