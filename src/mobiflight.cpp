@@ -216,7 +216,7 @@ void OnGetInfo()
 
 /**
  * @brief Callback for sending module configuration to MobiFlight.
- * The module configuration is generated on the fly rather than being stored in EEPROM.
+ * The module configuration is stored as a fixed string in EEPROM since it never changes.
  *
  */
 void OnGetConfig()
