@@ -24,10 +24,10 @@ char serial[MEM_LEN_SERIAL];
 static constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // Row MCP23017.
 static constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // Column MCP23017.
 
-// Arduino pin mappings.
-static constexpr uint8_t ROW_INTA_PIN = 0; // Row interrupts pin.
-static constexpr uint8_t LED_SDB_PIN = 4;  // Arduino pin connected to SDB on the LED driver.
-static constexpr uint8_t LED_INTB_PIN = 7; // Arduino pin connected to to INTB on the LED driver.
+// Pin mappings.
+static constexpr uint8_t ROW_INTA_PIN = 6;  // Row interrupts pin.
+static constexpr uint8_t LED_SDB_PIN = 10;  // Pin connected to SDB on the LED driver.
+static constexpr uint8_t LED_INTB_PIN = 11; // Pin connected to to INTB on the LED driver.
 
 // Virtual pins for one-off MobiFlight "modules". Their pins
 // start after all the keyboard matrix buttons, of which there are
