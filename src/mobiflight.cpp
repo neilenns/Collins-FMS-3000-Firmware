@@ -294,6 +294,8 @@ void CheckForPowerSave()
 void setup()
 {
   MFeeprom.init();
+  Wire.setSDA(D0);
+  Wire.setSCL(D1);
   Wire.begin();
   Wire.setClock(400000);
   Serial.begin(115200);
