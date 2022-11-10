@@ -5,6 +5,7 @@
 #include "CmdMessenger.h"
 #include "KeyboardMatrix.h"
 #include "LEDMatrix.h"
+#include "MFBoards.h"
 #include "MFEEPROM.h"
 #include "mobiflight.h"
 
@@ -23,11 +24,6 @@ char serial[MEM_LEN_SERIAL];
 // I2C Addresses for the row and column IO expanders.
 static constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // Row MCP23017.
 static constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // Column MCP23017.
-
-// Pin mappings.
-static constexpr uint8_t ROW_INTA_PIN = 6;  // Row interrupts pin.
-static constexpr uint8_t LED_SDB_PIN = 10;  // Pin connected to SDB on the LED driver.
-static constexpr uint8_t LED_INTB_PIN = 11; // Pin connected to to INTB on the LED driver.
 
 // Virtual pins for one-off MobiFlight "modules". Their pins
 // start after all the keyboard matrix buttons, of which there are
@@ -304,8 +300,8 @@ void CheckForPowerSave()
 void setup()
 {
   MFeeprom.init();
-  Wire.setSDA(D0);
-  Wire.setSCL(D1);
+  Wire.setSDA(I2C_SDA_PIN);
+  Wire.setSCL(I2C_SCL_PIN);
   Wire.begin();
   Wire.setClock(400000);
   Serial.begin(115200);
