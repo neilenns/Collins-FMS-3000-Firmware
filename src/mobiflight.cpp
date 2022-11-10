@@ -154,13 +154,26 @@ void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
 {
   lastButtonPress = millis();
 
+  if (row >= 12)
+  {
+    cmdMessenger.sendCmd(kStatus, "Row isn't valid.");
+    cmdMessenger.sendCmd(kStatus, row);
+    return;
+  }
+
+  if (column >= 12)
+  {
+    cmdMessenger.sendCmd(kStatus, "Column isn't valid.");
+    cmdMessenger.sendCmd(kStatus, column);
+    return;
+  }
+
   // While the keyboard matrix provides a row/column location that has to
   // be mapped to a button name to send the correct event to MobiFlight.
   // The button names are in a 1D array and the keyboard matrix is sparse
   // so a lookup table is used to get the correct index into the name array
   // for a given row/column in the keyboard matrix.
-  char buttonName[ButtonNames::MaxNameLength] = "";
-  uint8_t index = pgm_read_byte(&(ButtonNames::RowColumnLUT[row][column]));
+  uint8_t index = ButtonNames::RowColumnLUT[row][column];
 
   // If the lookup table returns 255 then it's a row/column that shouldn't
   // ever fire because it's a non-existent button.
@@ -170,12 +183,9 @@ void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
     return;
   }
 
-  // Get the button name from flash using the index.
-  strcpy_P(buttonName, (char *)pgm_read_word(&(ButtonNames::Names[index])));
-
   // Send the button name and state to MobiFlight.
   cmdMessenger.sendCmdStart(MFMessage::kButtonChange);
-  cmdMessenger.sendCmdArg(buttonName);
+  cmdMessenger.sendCmdArg(ButtonNames::Names[index]);
   cmdMessenger.sendCmdArg(state);
   cmdMessenger.sendCmdEnd();
 }
