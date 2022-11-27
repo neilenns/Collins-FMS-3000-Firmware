@@ -5,6 +5,7 @@
 #include "CmdMessenger.h"
 #include "KeyboardMatrix.h"
 #include "LEDMatrix.h"
+#include "MFBoards.h"
 #include "MFEEPROM.h"
 #include "mobiflight.h"
 
@@ -23,11 +24,6 @@ char serial[MEM_LEN_SERIAL];
 // I2C Addresses for the row and column IO expanders.
 static constexpr uint8_t ROW_I2C_ADDRESS = 0x20;    // Row MCP23017.
 static constexpr uint8_t COLUMN_I2C_ADDRESS = 0x21; // Column MCP23017.
-
-// Arduino pin mappings.
-static constexpr uint8_t ROW_INTA_PIN = 0; // Row interrupts pin.
-static constexpr uint8_t LED_SDB_PIN = 4;  // Arduino pin connected to SDB on the LED driver.
-static constexpr uint8_t LED_INTB_PIN = 7; // Arduino pin connected to to INTB on the LED driver.
 
 // Virtual pins for one-off MobiFlight "modules". Their pins
 // start after all the keyboard matrix buttons, of which there are
@@ -154,13 +150,26 @@ void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
 {
   lastButtonPress = millis();
 
+  if (row >= 12)
+  {
+    cmdMessenger.sendCmd(kStatus, "Row isn't valid.");
+    cmdMessenger.sendCmd(kStatus, row);
+    return;
+  }
+
+  if (column >= 12)
+  {
+    cmdMessenger.sendCmd(kStatus, "Column isn't valid.");
+    cmdMessenger.sendCmd(kStatus, column);
+    return;
+  }
+
   // While the keyboard matrix provides a row/column location that has to
   // be mapped to a button name to send the correct event to MobiFlight.
   // The button names are in a 1D array and the keyboard matrix is sparse
   // so a lookup table is used to get the correct index into the name array
   // for a given row/column in the keyboard matrix.
-  char buttonName[ButtonNames::MaxNameLength] = "";
-  uint8_t index = pgm_read_byte(&(ButtonNames::RowColumnLUT[row][column]));
+  uint8_t index = ButtonNames::RowColumnLUT[row][column];
 
   // If the lookup table returns 255 then it's a row/column that shouldn't
   // ever fire because it's a non-existent button.
@@ -170,12 +179,9 @@ void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
     return;
   }
 
-  // Get the button name from flash using the index.
-  strcpy_P(buttonName, (char *)pgm_read_word(&(ButtonNames::Names[index])));
-
   // Send the button name and state to MobiFlight.
   cmdMessenger.sendCmdStart(MFMessage::kButtonChange);
-  cmdMessenger.sendCmdArg(buttonName);
+  cmdMessenger.sendCmdArg(ButtonNames::Names[index]);
   cmdMessenger.sendCmdArg(state);
   cmdMessenger.sendCmdEnd();
 }
@@ -294,6 +300,8 @@ void CheckForPowerSave()
 void setup()
 {
   MFeeprom.init();
+  Wire.setSDA(I2C_SDA_PIN);
+  Wire.setSCL(I2C_SCL_PIN);
   Wire.begin();
   Wire.setClock(400000);
   Serial.begin(115200);

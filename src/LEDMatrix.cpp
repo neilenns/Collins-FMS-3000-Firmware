@@ -2,8 +2,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <avr/interrupt.h>
-#include <avr/wdt.h>
-#include <util/atomic.h>
 
 #include "LEDMatrix.h"
 
@@ -13,48 +11,14 @@ uint8_t completedABMCount = 0;
 volatile uint32_t seed;
 volatile int8_t nrot;
 
-// This method of generating a random seed comes from
-// https://sites.google.com/site/astudyofentropy/project-definition/timer-jitter-entropy-sources/entropy-library/arduino-random-seed
-void CreateTrulyRandomSeed()
-{
-  seed = 0;
-  nrot = 32; // Must be at least 4, but more increased the uniformity of the produced
-             // seeds entropy.
-
-  // The following five lines of code turn on the watch dog timer interrupt to create
-  // the seed value
-  cli();
-  MCUSR = 0;
-  _WD_CONTROL_REG |= (1 << _WD_CHANGE_BIT) | (1 << WDE);
-  _WD_CONTROL_REG = (1 << WDIE);
-  sei();
-
-  while (nrot > 0)
-    ; // wait here until seed is created
-
-  // The following five lines turn off the watch dog timer interrupt
-  cli();
-  MCUSR = 0;
-  _WD_CONTROL_REG |= (1 << _WD_CHANGE_BIT) | (0 << WDE);
-  _WD_CONTROL_REG = (0 << WDIE);
-  sei();
-}
-
-ISR(WDT_vect)
-{
-  nrot--;
-  seed = seed << 8;
-  seed = seed ^ TCNT1L;
-}
-
 /**
  * @brief Read a buffer of data from the specified register.
- * 
+ *
  * @param i2c_addr I2C address of the device to read the data from.
  * @param reg_addr Address of the register to read from.
  * @param buffer Buffer to read the data into.
  * @param length Length of the buffer.
- * @return uint8_t 
+ * @return uint8_t
  */
 uint8_t i2c_read_reg(const uint8_t i2c_addr, const uint8_t reg_addr, uint8_t *buffer, const uint8_t length)
 {
@@ -71,7 +35,7 @@ uint8_t i2c_read_reg(const uint8_t i2c_addr, const uint8_t reg_addr, uint8_t *bu
 
 /**
  * @brief Writes a buffer to the specified register.
- * 
+ *
  * @param i2c_addr I2C address of the device to write the data to.
  * @param reg_addr Address of the register to write to.
  * @param buffer Pointer to an array of bytes to write.
@@ -90,7 +54,7 @@ uint8_t i2c_write_reg(const uint8_t i2c_addr, const uint8_t reg_addr, const uint
 
 /**
  * @brief Construct a new LEDMatrix::LEDMatrix object
- * 
+ *
  * @param addr1 Connection on addr1 pin.
  * @param addr2 Connection on addr2 pin.
  * @param sdbPin Adruino pin connected to SDB.
@@ -111,7 +75,7 @@ void LEDMatrix::HandleInterrupt()
 
 /**
  * @brief Sets the IC PWM for all LEDs to the specified brightness.
- * 
+ *
  * @param brightness The brightness to use.
  */
 void LEDMatrix::SetBrightness(uint8_t brightness)
@@ -121,7 +85,7 @@ void LEDMatrix::SetBrightness(uint8_t brightness)
 
 /**
  * @brief Turns power save mode on or off.
- * 
+ *
  * @param state True to turn power save mode on, false to turn it off.
  */
 void LEDMatrix::SetPowerSaveMode(bool state)
@@ -131,7 +95,7 @@ void LEDMatrix::SetPowerSaveMode(bool state)
 
 /**
  * @brief Arduino initialization.
- * 
+ *
  */
 void LEDMatrix::Init()
 {
@@ -149,7 +113,6 @@ void LEDMatrix::Init()
   SetBrightness(255);   // Set PWM for all LEDs to full power.
 
   // Randomly assign one of the three ABM patterns to each button
-  CreateTrulyRandomSeed();
   for (int i = 0; i < CS_LINES; i++)
   {
     for (int j = 0; j < SW_LINES; j++)

@@ -1,24 +1,27 @@
+//
 // MFEEPROM.h
 //
-/// \mainpage MF MFEEPROM module for MobiFlight Framework
-/// \par Revision History
-/// \version 1.0 Initial release
-// Copyright (C) 2021
+// (C) MobiFlight Project 2022
+//
 
 #pragma once
+
+#include <stdint.h>
 
 class MFEEPROM
 {
 
 public:
-  MFEEPROM();
-  void init(void);
-  void get_length(void);
-  void read_block(uint16_t addr, char data[], uint16_t len);
-  void write_block(uint16_t addr, char data[], uint16_t len);
-  char read_char(uint16_t adr);
-  void write_byte(uint16_t adr, char data);
+    MFEEPROM();
+    void     init(void);
+    uint16_t get_length(void);
+    bool     read_block(uint16_t addr, char data[], uint16_t len);
+    bool     write_block(uint16_t addr, char data[], uint16_t len);
+    char     read_char(uint16_t adr);
+    bool     write_byte(uint16_t adr, char data);
 
 private:
-  uint16_t eepromLength = 0;
+    uint16_t _eepromLength = 0;
 };
+
+// MFEEPROM.h
