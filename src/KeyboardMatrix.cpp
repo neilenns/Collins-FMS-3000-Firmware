@@ -2,11 +2,9 @@
 #include <Wire.h>
 #include <MCP23017.h>
 
-#define DEBUG
-
 #include "KeyboardMatrix.h"
 
-static constexpr unsigned long DEBOUNCE_TIME_MS = 10;          // Time between button events in milliseconds.
+static constexpr unsigned long DEBOUNCE_TIME_MS = 100;         // Time between button events in milliseconds.
 static constexpr unsigned long PRESS_AND_HOLD_LENGTH_MS = 500; // Length of time a key must be held for a long press.
 
 #ifdef DEBUG
@@ -125,6 +123,17 @@ void KeyboardMatrix::CheckForButton()
     return;
   }
 
+  // Unfortunately interrupt-based debouncing as described in the application note for the MCP23017
+  // isn't enough to handle key debouncing. This check prevents duplicate key events which are
+  // quite common when just relying on the interrupt method.
+  if ((millis() - _lastPressEventTime) < DEBOUNCE_TIME_MS)
+  {
+#ifdef DEBUG
+    Serial.println("Debouncing");
+#endif
+    return;
+  }
+
   // Once the row is known reconfigure a bunch of registers to read the active column
   _columns->writeRegister(MCP23017Register::IODIR_A, 0xFF, 0xFF);  // Switch columns to input
   _rows->writeRegister(MCP23017Register::IODIR_A, 0x00, 0x00);     // Switch rows to output
@@ -219,14 +228,6 @@ void KeyboardMatrix::CheckForRelease()
 
 void KeyboardMatrix::Loop()
 {
-  // Unfortunately interrupt-based debouncing as described in the application note for the MCP23017
-  // isn't enough to handle key debouncing. This check prevents duplicate key events which are
-  // quite common when just relying on the interrupt method.
-  if ((millis() - _lastPressEventTime) < DEBOUNCE_TIME_MS)
-  {
-    return;
-  }
-
   // Fininte state machine for button detection
   switch (_currentState)
   {
