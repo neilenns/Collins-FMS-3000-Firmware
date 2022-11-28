@@ -39,7 +39,7 @@ bool powerSavingMode = false;
 
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
-KeyboardMatrix keyboardMatrix(ROW_I2C_ADDRESS, COLUMN_I2C_ADDRESS, ROW_INTA_PIN, OnKeyboardEvent, OnButtonPress);
+KeyboardMatrix keyboardMatrix(ROW_I2C_ADDRESS, COLUMN_I2C_ADDRESS, OnButtonPress);
 LEDMatrix ledMatrix(ADDR::GND, ADDR::GND, LED_SDB_PIN, LED_INTB_PIN, OnLEDEvent);
 
 /**
@@ -70,15 +70,6 @@ void attachCommandCallbacks()
 void OnLEDEvent()
 {
   ledMatrix.HandleInterrupt();
-}
-
-/**
- * @brief Handles an interrupt from the KeyboardMatrix.
- *
- */
-void OnKeyboardEvent()
-{
-  keyboardMatrix.HandleInterrupt();
 }
 
 /**
