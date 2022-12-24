@@ -4,7 +4,7 @@
 
 #include "KeyboardMatrix.h"
 
-static constexpr unsigned long DEBOUNCE_TIME_MS = 100;         // Time between button events in milliseconds.
+static constexpr unsigned long DEBOUNCE_TIME_MS = 50;          // Time between button events in milliseconds.
 static constexpr unsigned long PRESS_AND_HOLD_LENGTH_MS = 500; // Length of time a key must be held for a long press.
 
 #ifdef DEBUG
@@ -128,9 +128,6 @@ void KeyboardMatrix::CheckForButton()
   // quite common when just relying on the interrupt method.
   if ((millis() - _lastPressEventTime) < DEBOUNCE_TIME_MS)
   {
-#ifdef DEBUG
-    Serial.println("Debouncing");
-#endif
     return;
   }
 
