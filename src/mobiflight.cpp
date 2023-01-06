@@ -39,7 +39,7 @@ bool powerSavingMode = false;
 
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
-KeyboardMatrix keyboardMatrix(ROW_I2C_ADDRESS, COLUMN_I2C_ADDRESS, ROW_INTA_PIN, OnKeyboardEvent, OnButtonPress);
+KeyboardMatrix keyboardMatrix(KEY_INT_PIN, OnKeyboardEvent, OnButtonPress);
 LEDMatrix ledMatrix(ADDR::GND, ADDR::GND, LED_SDB_PIN, LED_INTB_PIN, OnLEDEvent);
 
 /**
@@ -146,42 +146,11 @@ void generateSerial(bool force)
  * @param row Row of the button
  * @param column Column of the button
  */
-void OnButtonPress(ButtonState state, uint8_t row, uint8_t column)
+void OnButtonPress(uint8_t keyId, ButtonState state)
 {
-  lastButtonPress = millis();
-
-  if (row >= 12)
-  {
-    cmdMessenger.sendCmd(kStatus, "Row isn't valid.");
-    cmdMessenger.sendCmd(kStatus, row);
-    return;
-  }
-
-  if (column >= 12)
-  {
-    cmdMessenger.sendCmd(kStatus, "Column isn't valid.");
-    cmdMessenger.sendCmd(kStatus, column);
-    return;
-  }
-
-  // While the keyboard matrix provides a row/column location that has to
-  // be mapped to a button name to send the correct event to MobiFlight.
-  // The button names are in a 1D array and the keyboard matrix is sparse
-  // so a lookup table is used to get the correct index into the name array
-  // for a given row/column in the keyboard matrix.
-  uint8_t index = ButtonNames::RowColumnLUT[row][column];
-
-  // If the lookup table returns 255 then it's a row/column that shouldn't
-  // ever fire because it's a non-existent button.
-  if (index == 255)
-  {
-    cmdMessenger.sendCmd(kStatus, "Row/column isn't a valid button");
-    return;
-  }
-
   // Send the button name and state to MobiFlight.
   cmdMessenger.sendCmdStart(MFMessage::kButtonChange);
-  cmdMessenger.sendCmdArg(ButtonNames::Names[index]);
+  cmdMessenger.sendCmdArg(ButtonNames::Names[keyId - 1]); // The names array is origin 0 while the key IDs are origin 1.
   cmdMessenger.sendCmdArg(state);
   cmdMessenger.sendCmdEnd();
 }

@@ -40,7 +40,7 @@ void attachCommandCallbacks();
 void generateSerial(bool force);
 void loadConfig();
 void OnActivateConfig();
-void OnButtonPress(ButtonState state, uint8_t row, uint8_t column);
+void OnButtonPress(uint8_t keyId, ButtonState state);
 void OnGenNewSerial();
 void OnGetConfig();
 void OnGetInfo();

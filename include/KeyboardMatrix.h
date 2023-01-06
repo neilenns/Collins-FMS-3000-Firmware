@@ -2,13 +2,12 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <MCP23017.h>
+#include <Adafruit_TCA8418.h>
 
 enum DetectionState
 {
-  WaitingForPress,
-  PressDetected,
-  WaitingForRelease
+  WaitingForKey,
+  KeyDetected
 };
 
 enum ButtonState
@@ -20,32 +19,25 @@ enum ButtonState
 extern "C"
 {
   typedef void (*KeyboardEvent)();
-  typedef void (*ButtonEvent)(ButtonState, uint8_t, uint8_t);
+  typedef void (*ButtonEvent)(uint8_t, ButtonState);
 };
 
 class KeyboardMatrix
 {
 private:
-  uint8_t _activeRow = 0;
-  uint8_t _activeColumn = 0;
   ButtonEvent _buttonHandler;
-  volatile DetectionState _currentState = DetectionState::WaitingForPress;
+  volatile DetectionState _currentState = DetectionState::WaitingForKey;
   KeyboardEvent _interruptHandler;
   uint8_t _interruptPin;
   unsigned long _lastPressEventTime;
 
-  MCP23017 *_rows;
-  MCP23017 *_columns;
+  Adafruit_TCA8418 *_keyMatrix;
 
-  void CheckForButton();
-  void CheckForRelease();
-  void InitForRowDetection(bool setPullups);
-  void DisableRowInterrupts();
-  void EnableRowInterrupts();
-  static int GetBitPosition(uint16_t value);
+  void ProcessKeys();
+  void ProcessClrDel(ButtonState);
 
 public:
-  KeyboardMatrix(uint8_t rowAddress, uint8_t columnAddress, uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler);
+  KeyboardMatrix(uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler);
   void Init();
   void Loop();
   void HandleInterrupt();

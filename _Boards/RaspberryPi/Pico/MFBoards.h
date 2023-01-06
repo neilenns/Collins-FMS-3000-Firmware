@@ -3,7 +3,7 @@
 #include <Arduino.h>
 
 // Pin mappings.
-static constexpr uint8_t ROW_INTA_PIN = D6;  // Row interrupts pin.
+static constexpr uint8_t KEY_INT_PIN = D2;  // Row interrupts pin.
 static constexpr uint8_t LED_SDB_PIN = D10;  // Pin connected to SDB on the LED driver.
 static constexpr uint8_t LED_INTB_PIN = D11; // Pin connected to to INTB on the LED driver.
 
