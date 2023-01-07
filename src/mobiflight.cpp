@@ -36,6 +36,7 @@ static constexpr unsigned long POWER_SAVING_TIME_SECS = 60 * 60; // One hour (60
 
 unsigned long lastButtonPress = 0;
 bool powerSavingMode = false;
+static char unique_serial_str[PICO_UNIQUE_BOARD_ID_SIZE_BYTES * 2 + 1 + 3] = "ID-"; // The +1 is for the null terminator and +3 is for "ID-"
 
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
@@ -115,28 +116,9 @@ void OnActivateConfig()
  */
 void OnResetBoard()
 {
-  generateSerial(false);
-
   // This is required to maintain compatibility with the standard Mobiflight firmware
   // which eventually activates the config when resetting the board.
   OnActivateConfig();
-}
-
-/**
- * @brief Loads the board serial number from EEPROM and generates a new one if force is set to true
- * or no serial number was present in EEPROM.
- *
- * @param force True if a new serial number should be created even if one already exists.
- */
-void generateSerial(bool force)
-{
-  MFeeprom.read_block(MEM_OFFSET_SERIAL, serial, MEM_LEN_SERIAL);
-  if (!force && serial[0] == 'S' && serial[1] == 'N')
-    return;
-  randomSeed(analogRead(0));
-  sprintf(serial, "SN-%03x-", (unsigned int)random(4095));
-  sprintf(&serial[7], "%03x", (unsigned int)random(4095));
-  MFeeprom.write_block(MEM_OFFSET_SERIAL, serial, MEM_LEN_SERIAL);
 }
 
 /**
@@ -184,7 +166,7 @@ void OnGetInfo()
   cmdMessenger.sendCmdStart(MFMessage::kInfo);
   cmdMessenger.sendCmdArg(F("Collins FMS 3000"));
   cmdMessenger.sendCmdArg(F("Collins FMS 3000"));
-  cmdMessenger.sendCmdArg(serial);
+  cmdMessenger.sendCmdArg(unique_serial_str);
   cmdMessenger.sendCmdArg(VERSION);
   cmdMessenger.sendCmdEnd();
 }
@@ -220,14 +202,14 @@ void OnSetPin()
 }
 
 /**
- * @brief Generates a new serial number for the board and stores it in EEPROM.
+ * @brief Serial numbers are hardcoded on Picos in the flash memory so this just
+ * returns that value.
  *
  */
 void OnGenNewSerial()
 {
-  generateSerial(true);
   cmdMessenger.sendCmdStart(MFMessage::kInfo);
-  cmdMessenger.sendCmdArg(serial);
+  cmdMessenger.sendCmdArg(unique_serial_str);
   cmdMessenger.sendCmdEnd();
 }
 
@@ -265,12 +247,14 @@ void CheckForPowerSave()
 }
 
 /**
- * @brief Android initialization method.
+ * @brief Arduino initialization method.
  *
  */
 void setup()
 {
   MFeeprom.init();
+  pico_get_unique_board_id_string(&unique_serial_str[3], sizeof(unique_serial_str) - 3);
+
   Wire.setSDA(I2C_SDA_PIN);
   Wire.setSCL(I2C_SCL_PIN);
   Wire.begin();
