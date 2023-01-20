@@ -41,7 +41,7 @@ void KeyboardMatrix::Init()
 
   // Set up the matrix with the correct number of rows and columns.
   _keyMatrix->begin(TCA8418_DEFAULT_ADDR, &Wire);
-  _keyMatrix->matrix(6, 10);
+  _keyMatrix->matrix(7, 10);
 
   // Attach the Arduino interrupt handler.
   pinMode(_interruptPin, INPUT_PULLUP);
