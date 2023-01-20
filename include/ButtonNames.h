@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arduino.h>
+
 namespace ButtonNames
 {
     static constexpr uint8_t MaxNameLength = 11;
