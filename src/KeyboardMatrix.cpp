@@ -11,6 +11,36 @@ static constexpr uint8_t CLR_KEY_ID = 54;                      // Key ID for the
 static constexpr uint8_t DEL_KEY_ID = 10;                      // Key ID for the virtual DEL key (CLR when long press).
 static constexpr unsigned long PRESS_AND_HOLD_LENGTH_MS = 500; // Length of time a key must be held for a long press.
 
+#ifdef DEBUG
+// Helper function to write a 16 bit value out as bits for debugging purposes.
+void write16AsBits(uint16_t value)
+{
+  for (int i = 0; i < 8; i++)
+  {
+    bool b = value & 0x8000;
+    Serial.print(b);
+    value = value << 1;
+  }
+  Serial.print(" ");
+  for (int i = 0; i < 8; i++)
+  {
+    bool b = value & 0x8000;
+    Serial.print(b);
+    value = value << 1;
+  }
+}
+// Helper function to write an 8 bit value out as bits for debugging purposes.
+void write8AsBits(uint8_t value)
+{
+  for (int i = 0; i < 8; i++)
+  {
+    bool b = value & 0x80;
+    Serial.print(b);
+    value = value << 1;
+  }
+}
+#endif
+
 KeyboardMatrix::KeyboardMatrix(uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler)
 {
   _interruptPin = interruptPin;
@@ -74,6 +104,9 @@ void KeyboardMatrix::ProcessKeys()
   keyState = (ButtonState)(!(keyEvent & KEY_STATE_MASK));
 
 #ifdef DEBUG
+  Serial.print("Key event bits: ");
+  write8AsBits(keyEvent);
+  Serial.println();
   Serial.print("Detected key: ");
   Serial.print(keyId);
   Serial.print(" State: ");
@@ -86,6 +119,12 @@ void KeyboardMatrix::ProcessKeys()
   if ((interruptStatus & INT_STAT_K_INT_BIT) == 0)
   {
     _currentState = DetectionState::WaitingForKey;
+  }
+
+  // Issue 31: For some reason the A key also sends a keyId 98 event.
+  if (keyId == 98)
+  {
+    return;
   }
 
   // The CLR/DEL key is special. To support press-and-hold and match actual aircraft behaviour it should only send release events
