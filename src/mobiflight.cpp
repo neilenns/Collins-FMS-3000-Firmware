@@ -36,7 +36,7 @@ static constexpr unsigned long POWER_SAVING_TIME_SECS = 60 * 60; // One hour (60
 
 unsigned long lastButtonPress = 0;
 bool powerSavingMode = false;
-static char unique_serial_str[PICO_UNIQUE_BOARD_ID_SIZE_BYTES * 2 + 1 + 3] = "ID-"; // The +1 is for the null terminator and +3 is for "ID-"
+static char unique_serial_str[PICO_UNIQUE_BOARD_ID_SIZE_BYTES * 2 + 1 + 3] = "SN-"; // The +1 is for the null terminator and +3 is for "ID-"
 
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
