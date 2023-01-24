@@ -65,17 +65,17 @@ namespace ButtonNames
     static constexpr char SW57[] = "IDX";
     static constexpr char SW58[] = "DIR";
     static constexpr char SW59[] = "MSG";
-    static constexpr char SW60[] = "LSK6";
-    static constexpr char SW61[] = "RSK1";
-    static constexpr char SW62[] = "RSK2";
-    static constexpr char SW63[] = "RSK3";
-    static constexpr char SW64[] = "RSK4";
-    static constexpr char SW65[] = "RSK5";
-    static constexpr char SW66[] = "LSK5";
-    static constexpr char SW67[] = "LSK4";
-    static constexpr char SW68[] = "LSK3";
-    static constexpr char SW69[] = "LSK2";
-    static constexpr char SW70[] = "LSK1";
+    static constexpr char SW60[] = "L6";
+    static constexpr char SW61[] = "R1";
+    static constexpr char SW62[] = "R2";
+    static constexpr char SW63[] = "R3";
+    static constexpr char SW64[] = "R4";
+    static constexpr char SW65[] = "R5";
+    static constexpr char SW66[] = "L5";
+    static constexpr char SW67[] = "L4";
+    static constexpr char SW68[] = "L3";
+    static constexpr char SW69[] = "L2";
+    static constexpr char SW70[] = "L1";
 
     static constexpr uint8_t ButtonCount = 70;
 
