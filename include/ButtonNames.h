@@ -56,7 +56,7 @@ namespace ButtonNames
     static constexpr char SW48[] = "X";
     static constexpr char SW49[] = "W";
     static constexpr char SW50[] = "V";
-    static constexpr char SW51[] = "RSK6";
+    static constexpr char SW51[] = "R6";
     static constexpr char SW52[] = "EXEC";
     static constexpr char SW53[] = "DIM";
     static constexpr char SW54[] = "CLR";
