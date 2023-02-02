@@ -9,43 +9,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Cache pip
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - name: Check out repo
+        uses: actions/checkout@v3
 
       - name: Cache PlatformIO
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
-          path: ~/.platformio
-          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
 
       - name: Install PlatformIO
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade platformio
+        run: pip install --upgrade platformio
 
-      - name: Run PlatformIO
+      - name: Run PlatformIO - pilot
         env:
           VERSION: "0.0.${{ github.event.number }}"
+          BOARD_NUMBER: 1
+        run: pio run
+
+      - name: Run PlatformIO - co-pilot
+        env:
+          VERSION: "0.0.${{ github.event.number }}"
+          BOARD_NUMBER: 2
         run: pio run
 
       - name: Archive firmware
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: firmware
-          path: .pio/build/**/firmware*.hex
+          path: .pio/build/**/firmware*.uf2
 
       - name: Archive MobiFlight configuration files
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: firmware
+          name: resources
           path: MobiFlight Resources/*.*
