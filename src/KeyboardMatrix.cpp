@@ -9,6 +9,7 @@ static constexpr uint8_t KEY_STATE_MASK = 0x80;                // Bit 7 in the k
 static constexpr uint8_t KEY_ID_MASK = 0x7F;                   // Bits 0-6 in the key event indicate which key was pressed.
 static constexpr uint8_t CLR_KEY_ID = 54;                      // Key ID for the special-cased CLR/DEL key.
 static constexpr uint8_t DEL_KEY_ID = 10;                      // Key ID for the virtual DEL key (CLR when long press).
+static constexpr uint8_t DIM_KEY_ID = 53;                      // Key ID for the special-cased DIM key.
 static constexpr unsigned long PRESS_AND_HOLD_LENGTH_MS = 500; // Length of time a key must be held for a long press.
 
 #ifdef DEBUG
@@ -133,6 +134,10 @@ void KeyboardMatrix::ProcessKeys()
   {
     ProcessClrDel(keyState);
   }
+  else if (keyId == DIM_KEY_ID)
+  {
+    ProcessDim(keyState);
+  }
   else
   {
     // All other keys send the key event
@@ -163,6 +168,33 @@ void KeyboardMatrix::ProcessClrDel(ButtonState keyState)
   else
   {
     _buttonHandler(CLR_KEY_ID, keyState);
+  }
+}
+
+/**
+ * @brief Handles the special case DIM key being used to reset the board. A long press
+ * will trigger a board reboot.
+ *
+ * @param keyState Whether the key is pressed or released.
+ */
+void KeyboardMatrix::ProcessDim(ButtonState keyState)
+{
+  if (keyState == ButtonState::Pressed)
+  {
+    _lastPressEventTime = millis();
+    _buttonHandler(DIM_KEY_ID, keyState); // send the press event
+    return;
+  }
+
+  // At this point we know the key was released. If it was a long press
+  // reboot the board. Otherwise send a release event
+  if ((millis() - _lastPressEventTime) > PRESS_AND_HOLD_LENGTH_MS)
+  {
+    rp2040.reboot();
+  }
+  else
+  {
+    _buttonHandler(DIM_KEY_ID, keyState);
   }
 }
 

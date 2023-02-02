@@ -35,6 +35,7 @@ private:
 
   void ProcessKeys();
   void ProcessClrDel(ButtonState);
+  void ProcessDim(ButtonState);
 
 public:
   KeyboardMatrix(uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler);
