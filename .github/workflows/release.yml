@@ -36,16 +36,23 @@ jobs:
         id: get_version
         uses: battila7/get-version-action@v2
 
-      - name: Run PlatformIO
+      - name: Run PlatformIO - pilot
         env:
           VERSION: ${{ steps.get_version.outputs.version-without-v }}
+          BOARD_NUMBER: 1
+        run: pio run
+
+      - name: Run PlatformIO - co-pilot
+        env:
+          VERSION: ${{ steps.get_version.outputs.version-without-v }}
+          BOARD_NUMBER: 2
         run: pio run
 
       - name: Archive firmware
         uses: actions/upload-artifact@v2
         with:
           name: firmware
-          path: .pio/build/**/firmware*.hex
+          path: .pio/build/**/firmware*.uf2
 
       - name: Archive MobiFlight configuration files
         uses: actions/upload-artifact@v2
@@ -59,5 +66,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
-            .pio/build/**/firmware*.hex
+            .pio/build/**/firmware*.uf2
             MobiFlight Resources/*.*

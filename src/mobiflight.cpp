@@ -12,7 +12,10 @@
 // The build version comes from an environment variable.
 #define STRINGIZER(arg) #arg
 #define STR_VALUE(arg) STRINGIZER(arg)
-#define VERSION STR_VALUE(BUILD_VERSION)
+
+// These defines are used in response to the GetInfo command.
+#define VERSION STR_VALUE(BUILD_VERSION) // This comes from get_version.py and is set by the build process.
+#define NAME STR_VALUE(MOBIFLIGHT_NAME)  // This comes from get_version.py and is set by the build process.
 
 // MobiFlight expects a board name, type, and serial number to come from the board
 // when requested. The serial number is stored in flash. The board type
@@ -165,7 +168,7 @@ void OnGetInfo()
 {
   cmdMessenger.sendCmdStart(MFMessage::kInfo);
   cmdMessenger.sendCmdArg(F("Collins FMS 3000"));
-  cmdMessenger.sendCmdArg(F("Collins FMS 3000"));
+  cmdMessenger.sendCmdArg(NAME);
   cmdMessenger.sendCmdArg(unique_serial_str);
   cmdMessenger.sendCmdArg(VERSION);
   cmdMessenger.sendCmdEnd();

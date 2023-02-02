@@ -1,22 +1,25 @@
 import os
 Import("env")
 
+# The names for the different FMS positions in the cockpit. Used
+# to generate output filename of the compiled firmware.
+board_position_name = ["pilot", "co-pilot"]
+
 # Get the version number from the build environment.
-firmware_version = os.environ.get('VERSION', "")
+firmware_version = os.environ.get('VERSION', "2.2.0")
+board_number = os.environ.get('BOARD_NUMBER', 1)
 
-# Clean up the version number
-if firmware_version == "":
-    # When no version is specified default to "0.0.1" for
-    # compatibility with MobiFlight desktop app version checks.
-    firmware_version = "2.2.0"
+# Convert board_number to origin 0 so it can be used to index into board_position_name.
+board_number -= 1
 
-print(f'Using version {firmware_version} for the build')
+print(f'Using version {firmware_version} position {board_position_name} ({board_number}) for the build')
 
 # Append the version to the build defines so it gets baked into the firmware
 env.Append(CPPDEFINES=[
-    f'BUILD_VERSION={firmware_version}'
+    f'BUILD_VERSION={firmware_version}',
+    f'MOBIFLIGHT_NAME=FMS 3000 - {board_number}'
 ])
 
 # Set the output filename to the name of the board and the version
 env.Replace(
-    PROGNAME=f'firmware_{env["PIOENV"]}_{firmware_version.replace(".", "_")}')
+    PROGNAME=f'firmware_{env["PIOENV"]}_{board_position_name[board_number]}_{firmware_version.replace(".", "_")}')

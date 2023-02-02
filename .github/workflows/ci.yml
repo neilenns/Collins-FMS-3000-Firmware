@@ -33,19 +33,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade platformio
 
-      - name: Run PlatformIO
+      - name: Run PlatformIO - pilot
         env:
           VERSION: "0.0.${{ github.event.number }}"
+          BOARD_NUMBER: 1
+        run: pio run
+
+      - name: Run PlatformIO - co-pilot
+        env:
+          VERSION: "0.0.${{ github.event.number }}"
+          BOARD_NUMBER: 2
         run: pio run
 
       - name: Archive firmware
         uses: actions/upload-artifact@v2
         with:
           name: firmware
-          path: .pio/build/**/firmware*.hex
+          path: .pio/build/**/firmware*.uf2
 
       - name: Archive MobiFlight configuration files
         uses: actions/upload-artifact@v2
         with:
-          name: firmware
+          name: resources
           path: MobiFlight Resources/*.*
