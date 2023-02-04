@@ -49,7 +49,7 @@ namespace ButtonNames
     static constexpr char SW41[] = "PLUSMINUS";
     static constexpr char SW42[] = "0";
     static constexpr char SW43[] = "DOT";
-    static constexpr char SW44[] = "SLASH";
+    static constexpr char SW44[] = "DIV";
     static constexpr char SW45[] = "SP";
     static constexpr char SW46[] = "Z";
     static constexpr char SW47[] = "Y";
