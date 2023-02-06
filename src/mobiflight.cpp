@@ -133,6 +133,8 @@ void OnResetBoard()
  */
 void OnButtonPress(uint8_t keyId, ButtonState state)
 {
+  lastButtonPress = millis();
+
   // Send the button name and state to MobiFlight.
   cmdMessenger.sendCmdStart(MFMessage::kButtonChange);
   cmdMessenger.sendCmdArg(ButtonNames::Names[keyId - 1]); // The names array is origin 0 while the key IDs are origin 1.
@@ -194,7 +196,6 @@ void OnSetPin()
   int pin = cmdMessenger.readInt16Arg();
   int state = cmdMessenger.readInt16Arg();
 
-  // The brightness virtual pin is 69
   if (pin == BRIGHTNESS_PIN)
   {
     cmdMessenger.sendCmd(kStatus, "OK");
