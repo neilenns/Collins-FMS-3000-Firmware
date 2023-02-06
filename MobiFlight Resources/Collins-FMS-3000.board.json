@@ -1,11 +1,5 @@
 {
   "$schema": "./mfboard.schema.json",
-  "AvrDudeSettings": {
-    "Device": "atmega328p",
-    "BaudRate": "115200",
-    "Programmer": "arduino",
-    "FirmwareBaseName": "mobiflight_nano"
-  },
   "Connection": {
     "ConnectionDelay": 1750,
     "DelayAfterFirmwareUpdate": 0,
@@ -15,12 +9,11 @@
     "ForceResetOnFirmwareUpdate": false,
     "MessageSize": 32
   },
-  "HardwareIds": ["^VID_1A86&PID_7523"],
   "Info": {
-    "CanInstallFirmware": true,
-    "FriendlyName": "Arduino Nano",
-    "LatestFirmwareVersion": "0.0.1",
-    "MobiFlightType": "MobiFlight Nano"
+    "CanInstallFirmware": false,
+    "FriendlyName": "Collins FMS 3000",
+    "LatestFirmwareVersion": "3.0.0",
+    "MobiFlightType": "Collins FMS 3000"
   },
   "ModuleLimits": {
     "MaxAnalogInputs": 2,
@@ -451,8 +444,15 @@
       "isAnalog": false,
       "isI2C": false,
       "isPWM": true,
-      "Name": "BRIGHTNESS",
+      "Name": "DEL",
       "Pin": 69
+    },
+    {
+      "isAnalog": false,
+      "isI2C": false,
+      "isPWM": true,
+      "Name": "BRIGHTNESS",
+      "Pin": 70
     }
   ]
 }
