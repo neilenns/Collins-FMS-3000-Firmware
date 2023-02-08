@@ -34,6 +34,7 @@ private:
   Adafruit_TCA8418 *_keyMatrix;
 
   void ProcessKeys();
+  void ReadKeyEvent();
   void ProcessClrDel(ButtonState);
   void ProcessDim(ButtonState);
 

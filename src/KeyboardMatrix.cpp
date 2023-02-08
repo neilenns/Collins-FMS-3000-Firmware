@@ -4,6 +4,7 @@
 
 #include "KeyboardMatrix.h"
 
+static constexpr uint8_t INT_STAT_GPI_INT_BIT = 0x02;          // GPI_INT_BIT is bit 1 in the INT_STAT register.
 static constexpr uint8_t INT_STAT_K_INT_BIT = 0x01;            // K_INT is bit 0 in the INT_STAT register.
 static constexpr uint8_t KEY_STATE_MASK = 0x80;                // Bit 7 in the key event indicates whether the button was pressed or released.
 static constexpr uint8_t KEY_ID_MASK = 0x7F;                   // Bits 0-6 in the key event indicate which key was pressed.
@@ -86,23 +87,20 @@ void KeyboardMatrix::Init()
 }
 
 /**
- * @brief Determines the key and event (pressed or released) when an interrupt fires.
+ * @brief Reads a single key event from the event queue and processes it as a MobiFlight
+ * key press.
  *
  */
-void KeyboardMatrix::ProcessKeys()
+void KeyboardMatrix::ReadKeyEvent()
 {
-  int keyEvent;
-  int keyId;
-  ButtonState keyState;
-
   // Read the key press waiting in the buffer and get the ID of the key that fired.
-  keyEvent = _keyMatrix->getEvent();
-  keyId = keyEvent & KEY_ID_MASK;
+  int keyEvent = _keyMatrix->getEvent();
+  int keyId = keyEvent & KEY_ID_MASK;
 
   // The chip reports 1 for press and 0 for release. Since Arduinos
   // use inverse logic for key states invert the value from the chip
   // and cast it to a ButtonState.
-  keyState = (ButtonState)(!(keyEvent & KEY_STATE_MASK));
+  ButtonState keyState = (ButtonState)(!(keyEvent & KEY_STATE_MASK));
 
 #ifdef DEBUG
   Serial.print("Key event bits: ");
@@ -113,14 +111,6 @@ void KeyboardMatrix::ProcessKeys()
   Serial.print(" State: ");
   Serial.println(keyState);
 #endif
-
-  // Try and clear the interrupt. If there are more events in the buffer the interrupt won't clear.
-  _keyMatrix->writeRegister(TCA8418_REG_INT_STAT, 1);
-  int interruptStatus = _keyMatrix->readRegister(TCA8418_REG_INT_STAT);
-  if ((interruptStatus & INT_STAT_K_INT_BIT) == 0)
-  {
-    _currentState = DetectionState::WaitingForKey;
-  }
 
   // Issue 31: For some reason the A key also sends a keyId 98 event.
   if (keyId == 98)
@@ -143,6 +133,41 @@ void KeyboardMatrix::ProcessKeys()
     // All other keys send the key event
     _buttonHandler(keyId, keyState);
   }
+}
+
+/**
+ * @brief Handles an interrupt from the TCA8418 and processes all keys in the event queue.
+ *
+ */
+void KeyboardMatrix::ProcessKeys()
+{
+  // This flow comes from the TCA8418 datasheet, section 8.3.1.3: Key Event (FIFO) Reading.
+
+  // Step 1: Find out what caused the interrupt. Anything other than K_INT gets ignored.
+  int interruptStatus = _keyMatrix->readRegister(TCA8418_REG_INT_STAT);
+  if ((interruptStatus && INT_STAT_K_INT_BIT) != INT_STAT_K_INT_BIT)
+  {
+    _currentState = DetectionState::WaitingForKey;
+    return;
+  }
+
+  // Step 2: Read KEY_LCK_EC register to find out how many events are stored in the queue.
+  int pendingKeyCount = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC);
+
+  // Step 3: Read the pending keys in the FIFO queue.
+  while (pendingKeyCount != 0)
+  {
+    ReadKeyEvent();
+
+    // Step 4: Check the FIFO queue length again.
+    pendingKeyCount = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC);
+  }
+
+  // Step 5: Reset the interrupt flag.
+  _keyMatrix->writeRegister(TCA8418_REG_INT_STAT, INT_STAT_K_INT_BIT);
+
+  // Set the state machine back to waiting for key.
+  _currentState = DetectionState::WaitingForKey;
 }
 
 /**
