@@ -70,89 +70,110 @@ void KeyboardMatrix::DumpRegisters()
 {
   // Write out all the configuration registers
   int registerState;
-  _keyMatrix->readRegister(TCA8418_REG_CFG);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_CFG);
   Serial.print("CFG: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_INT_STAT);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_INT_STAT);
   Serial.print("INT_STAT: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC);
   Serial.print("LCK_EC: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPIO_DAT_STAT_1);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_DAT_STAT_1);
   Serial.print("DAT_STAT_1: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPIO_DAT_STAT_2);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_DAT_STAT_2);
   Serial.print("DAT_STAT_2: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPIO_DAT_STAT_3);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_DAT_STAT_3);
   Serial.print("DAT_STAT_3: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_KP_GPIO_1);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_KP_GPIO_1);
   Serial.print("KP_GPIO_1: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_KP_GPIO_2);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_KP_GPIO_2);
   Serial.print("KP_GPIO_2: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_KP_GPIO_3);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_KP_GPIO_3);
   Serial.print("KP_GPIO_3: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPI_EM_1);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPI_EM_1);
   Serial.print("GPI_EM_1: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPI_EM_2);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPI_EM_2);
   Serial.print("GPI_EM_2: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPI_EM_3);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPI_EM_3);
   Serial.print("GPI_EM_3: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPIO_INT_LVL_1);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_INT_LVL_1);
   Serial.print("INT_LVL_1: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPIO_INT_LVL_2);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_INT_LVL_2);
   Serial.print("INT_LVL_2: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPIO_INT_LVL_3);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_INT_LVL_3);
   Serial.print("INT_LVL_3: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_DEBOUNCE_DIS_1);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_DEBOUNCE_DIS_1);
   Serial.print("DEBOIUNCE_DIS_1: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_DEBOUNCE_DIS_2);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_DEBOUNCE_DIS_2);
   Serial.print("DEBOIUNCE_DIS_2: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_DEBOUNCE_DIS_3);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_DEBOUNCE_DIS_3);
   Serial.print("DEBOIUNCE_DIS_3: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPIO_PULL_1);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_PULL_1);
   Serial.print("GPIO_PULL_1: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPIO_PULL_2);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_PULL_2);
   Serial.print("GPIO_PULL_1: ");
   write8AsBits(registerState);
+  Serial.println();
 
-  _keyMatrix->readRegister(TCA8418_REG_GPIO_PULL_3);
+  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_PULL_3);
   Serial.print("GPIO_PULL_1: ");
   write8AsBits(registerState);
+  Serial.println();
 }
 
 /**
@@ -161,6 +182,8 @@ void KeyboardMatrix::DumpRegisters()
  */
 void KeyboardMatrix::Init()
 {
+  delay(10000);
+  Serial.println("Initializing keyboard matrix");
   _keyMatrix = new Adafruit_TCA8418();
 
   // Set up the matrix with the correct number of rows and columns.
