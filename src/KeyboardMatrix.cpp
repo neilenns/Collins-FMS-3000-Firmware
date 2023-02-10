@@ -44,7 +44,14 @@ void write8AsBits(uint8_t value)
 }
 #endif
 
-KeyboardMatrix::KeyboardMatrix(const uint8_t interruptPin, const KeyboardEvent interruptHandler, ButtonEvent buttonHandler)
+/**
+ * @brief Construct a new Keyboard Matrix:: Keyboard Matrix object.
+ *
+ * @param interruptPin Pin to trigger when an interrupt fires.
+ * @param interruptHandler Interrupt handler to call when an interrupt fires.
+ * @param buttonHandler Function to call when a button event is processed.
+ */
+KeyboardMatrix::KeyboardMatrix(const uint8_t interruptPin, const KeyboardEvent interruptHandler, const ButtonEvent buttonHandler)
 {
   _interruptPin = interruptPin;
   _interruptHandler = interruptHandler;
@@ -65,6 +72,10 @@ void KeyboardMatrix::HandleInterrupt()
 }
 
 #ifdef DEBUG
+/**
+ * @brief Dumps the current state of the TCA8418 registers for debugging purposes.
+ *
+ */
 void KeyboardMatrix::DumpRegisters()
 {
   // Write out all the configuration registers
@@ -245,7 +256,7 @@ void KeyboardMatrix::Init()
  * key press.
  *
  */
-void KeyboardMatrix::ReadKeyEvent(int keyEvent)
+void KeyboardMatrix::ReadKeyEvent(const int keyEvent)
 {
   int keyId = keyEvent & KEY_ID_MASK;
 
@@ -321,7 +332,7 @@ void KeyboardMatrix::ProcessKeys()
  *
  * @param keyState Whether the key is pressed or released.
  */
-void KeyboardMatrix::ProcessClrDel(ButtonState keyState)
+void KeyboardMatrix::ProcessClrDel(const ButtonState keyState)
 {
   if (keyState == ButtonState::Pressed)
   {
@@ -347,7 +358,7 @@ void KeyboardMatrix::ProcessClrDel(ButtonState keyState)
  *
  * @param keyState Whether the key is pressed or released.
  */
-void KeyboardMatrix::ProcessDim(ButtonState keyState)
+void KeyboardMatrix::ProcessDim(const ButtonState keyState)
 {
   if (keyState == ButtonState::Pressed)
   {
@@ -368,6 +379,10 @@ void KeyboardMatrix::ProcessDim(ButtonState keyState)
   }
 }
 
+/**
+ * @brief State machine loop for the keyboard matrix.
+ *
+ */
 void KeyboardMatrix::Loop()
 {
   // Fininte state machine for button detection

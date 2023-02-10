@@ -43,7 +43,7 @@ static char unique_serial_str[PICO_UNIQUE_BOARD_ID_SIZE_BYTES * 2 + 1 + 3] = "SN
 
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 MFEEPROM MFeeprom;
-KeyboardMatrix keyboardMatrix(KEY_INT_PIN, OnKeyboardEvent, OnButtonPress);
+KeyboardMatrix keyboardMatrix(KEY_INT_PIN, OnKeyboardEvent, OnButtonEvent);
 LEDMatrix ledMatrix(ADDR::GND, ADDR::GND, LED_SDB_PIN, LED_INTB_PIN, OnLEDEvent);
 
 /**
@@ -127,11 +127,10 @@ void OnResetBoard()
 /**
  * @brief Callback for handling a button press from the keyboard matrix.
  *
+ * @param keyId The ID of the key that triggered the event
  * @param state State of the button (pressed or released)
- * @param row Row of the button
- * @param column Column of the button
  */
-void OnButtonPress(uint8_t keyId, ButtonState state)
+void OnButtonEvent(const uint8_t keyId, const ButtonState state)
 {
   lastButtonPress = millis();
 

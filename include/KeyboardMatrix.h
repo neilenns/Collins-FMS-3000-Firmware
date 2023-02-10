@@ -18,7 +18,7 @@ enum ButtonState
 extern "C"
 {
   typedef void (*KeyboardEvent)();
-  typedef void (*ButtonEvent)(uint8_t, ButtonState);
+  typedef void (*ButtonEvent)(const uint8_t, const ButtonState);
 };
 
 class KeyboardMatrix
@@ -34,13 +34,13 @@ private:
   void DumpRegisters();
 #endif
 
-  void ProcessClrDel(ButtonState);
-  void ProcessDim(ButtonState);
+  void ProcessClrDel(const ButtonState);
+  void ProcessDim(const ButtonState);
   void ProcessKeys();
   void ReadKeyEvent(int keyEvent);
 
 public:
-  KeyboardMatrix(uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler);
+  KeyboardMatrix(const uint8_t, const KeyboardEvent, const ButtonEvent);
   void Init();
   void Loop();
   void HandleInterrupt();

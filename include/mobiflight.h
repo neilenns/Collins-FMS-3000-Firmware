@@ -37,10 +37,8 @@ enum MFMessage
 };
 
 void attachCommandCallbacks();
-void generateSerial(bool force);
-void loadConfig();
 void OnActivateConfig();
-void OnButtonPress(uint8_t keyId, ButtonState state);
+void OnButtonEvent(const uint8_t, const ButtonState);
 void OnGenNewSerial();
 void OnGetConfig();
 void OnGetInfo();
@@ -52,7 +50,4 @@ void OnSetConfig();
 void OnSetName();
 void OnSetPin();
 void OnUnknownCommand();
-void readConfig();
 void SendOk();
-void SetPowerSavingMode(bool state);
-void updatePowerSaving();
