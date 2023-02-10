@@ -73,7 +73,9 @@ void KeyboardMatrix::Init()
 
   // Set up the matrix with the correct number of rows and columns.
   _keyMatrix->begin(TCA8418_DEFAULT_ADDR, &Wire);
-  _keyMatrix->matrix(7, 10);
+  _keyMatrix->writeRegister(TCA8418_REG_KP_GPIO_1, 0b01111111); // Enable KP matrix for ROW0 through ROW6.
+  _keyMatrix->writeRegister(TCA8418_REG_KP_GPIO_2, 0b11111111); // Enable KP matrix for COL0 through COL7.
+  _keyMatrix->writeRegister(TCA8418_REG_KP_GPIO_3, 0b00000011); // Enable KP matrix for COL8 through COL9.
 
   // Attach the Arduino interrupt handler.
   pinMode(_interruptPin, INPUT_PULLUP);
@@ -81,7 +83,11 @@ void KeyboardMatrix::Init()
 
   // Flush any pending interrupts then enable interrupt sending
   _keyMatrix->flush();
-  _keyMatrix->enableInterrupts();
+
+  // Enable key interrupts interrupts
+  uint8_t config = _keyMatrix->readRegister(TCA8418_REG_CFG);
+  config |= TCA8418_REG_CFG_KE_IEN;
+  _keyMatrix->writeRegister(TCA8418_REG_CFG, config);
 
   _currentState = DetectionState::WaitingForKey;
 }
@@ -91,10 +97,8 @@ void KeyboardMatrix::Init()
  * key press.
  *
  */
-void KeyboardMatrix::ReadKeyEvent()
+void KeyboardMatrix::ReadKeyEvent(int keyEvent)
 {
-  // Read the key press waiting in the buffer and get the ID of the key that fired.
-  int keyEvent = _keyMatrix->getEvent();
   int keyId = keyEvent & KEY_ID_MASK;
 
   // The chip reports 1 for press and 0 for release. Since Arduinos
@@ -115,6 +119,7 @@ void KeyboardMatrix::ReadKeyEvent()
   // Issue 31: For some reason the A key also sends a keyId 98 event.
   if (keyId == 98)
   {
+    Serial.println("Skipping 98");
     return;
   }
 
@@ -142,6 +147,7 @@ void KeyboardMatrix::ReadKeyEvent()
 void KeyboardMatrix::ProcessKeys()
 {
   // This flow comes from the TCA8418 datasheet, section 8.3.1.3: Key Event (FIFO) Reading.
+  int keyEvent;
 
   // Step 1: Find out what caused the interrupt. Anything other than K_INT gets ignored.
   int interruptStatus = _keyMatrix->readRegister(TCA8418_REG_INT_STAT);
@@ -151,16 +157,14 @@ void KeyboardMatrix::ProcessKeys()
     return;
   }
 
-  // Step 2: Read KEY_LCK_EC register to find out how many events are stored in the queue.
-  int pendingKeyCount = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC);
+  // Step 2 in the data sheet, reading KEY_LCK_EC to get how many events
+  // are stored doesn't seem necessary.
 
-  // Step 3: Read the pending keys in the FIFO queue.
-  while (pendingKeyCount != 0)
+  // Step 3: Read the pending keys in the FIFO queue. When this returns 0
+  // there are no events left in the queue.
+  while (keyEvent = _keyMatrix->getEvent())
   {
-    ReadKeyEvent();
-
-    // Step 4: Check the FIFO queue length again.
-    pendingKeyCount = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC);
+    ReadKeyEvent(keyEvent);
   }
 
   // Step 5: Reset the interrupt flag.
