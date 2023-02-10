@@ -1,13 +1,14 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_TCA8418.h>
-
+#include "I2C.h"
 #include "KeyboardMatrix.h"
+#include "TCA8418.h"
 
-static constexpr uint8_t INT_STAT_GPI_INT_BIT = 0x02;          // GPI_INT_BIT is bit 1 in the INT_STAT register.
-static constexpr uint8_t INT_STAT_K_INT_BIT = 0x01;            // K_INT is bit 0 in the INT_STAT register.
-static constexpr uint8_t KEY_STATE_MASK = 0x80;                // Bit 7 in the key event indicates whether the button was pressed or released.
-static constexpr uint8_t KEY_ID_MASK = 0x7F;                   // Bits 0-6 in the key event indicate which key was pressed.
+static constexpr uint8_t INT_STAT_GPI_INT_BIT = 0b00000010;    // GPI_INT_BIT is bit 1 in the INT_STAT register.
+static constexpr uint8_t INT_STAT_K_INT_BIT = 0b00000001;      // K_INT is bit 0 in the INT_STAT register.
+static constexpr uint8_t KEY_EVENT_COUNT_MASK = 0b000001111;   // Bits 0..3 in the KEY_LOCK_EC register are how many events are in the queue.
+static constexpr uint8_t KEY_STATE_MASK = 0b10000000;          // Bit 7 in the key event indicates whether the button was pressed or released.
+static constexpr uint8_t KEY_ID_MASK = 0b01111111;             // Bits 0-6 in the key event indicate which key was pressed.
 static constexpr uint8_t CLR_KEY_ID = 54;                      // Key ID for the special-cased CLR/DEL key.
 static constexpr uint8_t DEL_KEY_ID = 10;                      // Key ID for the virtual DEL key (CLR when long press).
 static constexpr uint8_t DIM_KEY_ID = 53;                      // Key ID for the special-cased DIM key.
@@ -43,7 +44,14 @@ void write8AsBits(uint8_t value)
 }
 #endif
 
-KeyboardMatrix::KeyboardMatrix(uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler)
+/**
+ * @brief Construct a new Keyboard Matrix:: Keyboard Matrix object.
+ *
+ * @param interruptPin Pin to trigger when an interrupt fires.
+ * @param interruptHandler Interrupt handler to call when an interrupt fires.
+ * @param buttonHandler Function to call when a button event is processed.
+ */
+KeyboardMatrix::KeyboardMatrix(const uint8_t interruptPin, const KeyboardEvent interruptHandler, const ButtonEvent buttonHandler)
 {
   _interruptPin = interruptPin;
   _interruptHandler = interruptHandler;
@@ -63,25 +71,182 @@ void KeyboardMatrix::HandleInterrupt()
   }
 }
 
+#ifdef DEBUG
+/**
+ * @brief Dumps the current state of the TCA8418 registers for debugging purposes.
+ *
+ */
+void KeyboardMatrix::DumpRegisters()
+{
+  // Write out all the configuration registers
+  int registerState;
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_CFG);
+  Serial.print("CFG: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_INT_STAT);
+  Serial.print("INT_STAT: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KEY_LCK_EC);
+  Serial.print("LCK_EC: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_DAT_STAT_1);
+  Serial.print("DAT_STAT_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_DAT_STAT_2);
+  Serial.print("DAT_STAT_2: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_DAT_STAT_3);
+  Serial.print("DAT_STAT_3: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_1);
+  Serial.print("KP_GPIO_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_2);
+  Serial.print("KP_GPIO_2: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_3);
+  Serial.print("KP_GPIO_3: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_1);
+  Serial.print("GPI_EM_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_2);
+  Serial.print("GPI_EM_2: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_3);
+  Serial.print("GPI_EM_3: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_LVL_1);
+  Serial.print("INT_LVL_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_LVL_2);
+  Serial.print("INT_LVL_2: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_LVL_3);
+  Serial.print("INT_LVL_3: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_DEBOUNCE_DIS_1);
+  Serial.print("DEBOIUNCE_DIS_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_DEBOUNCE_DIS_2);
+  Serial.print("DEBOIUNCE_DIS_2: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_DEBOUNCE_DIS_3);
+  Serial.print("DEBOIUNCE_DIS_3: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_PULL_1);
+  Serial.print("GPIO_PULL_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_PULL_2);
+  Serial.print("GPIO_PULL_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_PULL_3);
+  Serial.print("GPIO_PULL_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_1);
+  Serial.print("GPIO_INT_EN_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_2);
+  Serial.print("GPIO_INT_EN_2: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_3);
+  Serial.print("GPIO_INT_EN_3: ");
+  write8AsBits(registerState);
+  Serial.println();
+}
+#endif
+
 /**
  * @brief Initializes the keyboard matrix.
  *
  */
 void KeyboardMatrix::Init()
 {
-  _keyMatrix = new Adafruit_TCA8418();
+#ifdef DEBUG
+  delay(10000);
+  Serial.println("Initializing keyboard matrix");
+#endif
 
   // Set up the matrix with the correct number of rows and columns.
-  _keyMatrix->begin(TCA8418_DEFAULT_ADDR, &Wire);
-  _keyMatrix->matrix(7, 10);
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_1, 0b01111111); // Enable KP matrix for ROW0 through ROW6.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_2, 0b11111111); // Enable KP matrix for COL0 through COL7.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_3, 0b00000011); // Enable KP matrix for COL8 through COL9.
+
+  // Turn off all GPIO events so they don't get added to the FIFO queue
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_1, 0); // Disable interrupts for GPIO pins.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_2, 0); // Disable interrupts for GPIO pins.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_3, 0); // Disable interrupts for GPIO pins.
+
+  // Disable all GPIO interrupts.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_1, 0); // Clear interrupts for GPIO pins.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_2, 0); // Clear interrupts for GPIO pins.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_3, 0); // Clear interrupts for GPIO pins.
 
   // Attach the Arduino interrupt handler.
   pinMode(_interruptPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(_interruptPin), _interruptHandler, CHANGE);
 
-  // Flush any pending interrupts then enable interrupt sending
-  _keyMatrix->flush();
-  _keyMatrix->enableInterrupts();
+  // Clear out any pending keys in the FIFO queue.
+  while (I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KEY_EVENT_A))
+  {
+  }
+  // Clear any pending interrupts.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_INT_STAT, 3);
+
+  // Enable key interrupts interrupts
+  uint8_t config = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_CFG);
+  config |= TCA8418_REG_CFG_KE_IEN;
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_CFG, config);
+
+#ifdef DEBUG
+  DumpRegisters();
+#endif
 
   _currentState = DetectionState::WaitingForKey;
 }
@@ -91,10 +256,8 @@ void KeyboardMatrix::Init()
  * key press.
  *
  */
-void KeyboardMatrix::ReadKeyEvent()
+void KeyboardMatrix::ReadKeyEvent(const int keyEvent)
 {
-  // Read the key press waiting in the buffer and get the ID of the key that fired.
-  int keyEvent = _keyMatrix->getEvent();
   int keyId = keyEvent & KEY_ID_MASK;
 
   // The chip reports 1 for press and 0 for release. Since Arduinos
@@ -111,12 +274,6 @@ void KeyboardMatrix::ReadKeyEvent()
   Serial.print(" State: ");
   Serial.println(keyState);
 #endif
-
-  // Issue 31: For some reason the A key also sends a keyId 98 event.
-  if (keyId == 98)
-  {
-    return;
-  }
 
   // The CLR/DEL key is special. To support press-and-hold and match actual aircraft behaviour it should only send release events
   // This check ensures the press event fires for all other keys.
@@ -142,29 +299,28 @@ void KeyboardMatrix::ReadKeyEvent()
 void KeyboardMatrix::ProcessKeys()
 {
   // This flow comes from the TCA8418 datasheet, section 8.3.1.3: Key Event (FIFO) Reading.
+  int keyEvent;
 
   // Step 1: Find out what caused the interrupt. Anything other than K_INT gets ignored.
-  int interruptStatus = _keyMatrix->readRegister(TCA8418_REG_INT_STAT);
+  int interruptStatus = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_INT_STAT);
   if ((interruptStatus && INT_STAT_K_INT_BIT) != INT_STAT_K_INT_BIT)
   {
     _currentState = DetectionState::WaitingForKey;
     return;
   }
 
-  // Step 2: Read KEY_LCK_EC register to find out how many events are stored in the queue.
-  int pendingKeyCount = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC);
+  // Step 2 in the data sheet, reading KEY_LCK_EC to get how many events
+  // are stored doesn't seem necessary.
 
-  // Step 3: Read the pending keys in the FIFO queue.
-  while (pendingKeyCount != 0)
+  // Step 3: Read the pending keys in the FIFO queue. When this returns 0
+  // there are no events left in the queue.
+  while (keyEvent = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KEY_EVENT_A))
   {
-    ReadKeyEvent();
-
-    // Step 4: Check the FIFO queue length again.
-    pendingKeyCount = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC);
+    ReadKeyEvent(keyEvent);
   }
 
   // Step 5: Reset the interrupt flag.
-  _keyMatrix->writeRegister(TCA8418_REG_INT_STAT, INT_STAT_K_INT_BIT);
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_INT_STAT, INT_STAT_K_INT_BIT);
 
   // Set the state machine back to waiting for key.
   _currentState = DetectionState::WaitingForKey;
@@ -176,7 +332,7 @@ void KeyboardMatrix::ProcessKeys()
  *
  * @param keyState Whether the key is pressed or released.
  */
-void KeyboardMatrix::ProcessClrDel(ButtonState keyState)
+void KeyboardMatrix::ProcessClrDel(const ButtonState keyState)
 {
   if (keyState == ButtonState::Pressed)
   {
@@ -202,7 +358,7 @@ void KeyboardMatrix::ProcessClrDel(ButtonState keyState)
  *
  * @param keyState Whether the key is pressed or released.
  */
-void KeyboardMatrix::ProcessDim(ButtonState keyState)
+void KeyboardMatrix::ProcessDim(const ButtonState keyState)
 {
   if (keyState == ButtonState::Pressed)
   {
@@ -223,6 +379,10 @@ void KeyboardMatrix::ProcessDim(ButtonState keyState)
   }
 }
 
+/**
+ * @brief State machine loop for the keyboard matrix.
+ *
+ */
 void KeyboardMatrix::Loop()
 {
   // Fininte state machine for button detection
