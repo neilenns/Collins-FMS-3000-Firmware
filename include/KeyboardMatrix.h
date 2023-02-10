@@ -33,6 +33,7 @@ private:
 
   Adafruit_TCA8418 *_keyMatrix;
 
+  void DumpRegisters();
   void ProcessKeys();
   void ReadKeyEvent(int keyEvent);
   void ProcessClrDel(ButtonState);
