@@ -1,10 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_TCA8418.h>
-
-#define DEBUG
-
+#include "I2C.h"
 #include "KeyboardMatrix.h"
+#include "TCA8418.h"
 
 static constexpr uint8_t INT_STAT_GPI_INT_BIT = 0b00000010;    // GPI_INT_BIT is bit 1 in the INT_STAT register.
 static constexpr uint8_t INT_STAT_K_INT_BIT = 0b00000001;      // K_INT is bit 0 in the INT_STAT register.
@@ -46,7 +44,7 @@ void write8AsBits(uint8_t value)
 }
 #endif
 
-KeyboardMatrix::KeyboardMatrix(uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler)
+KeyboardMatrix::KeyboardMatrix(const uint8_t interruptPin, const KeyboardEvent interruptHandler, ButtonEvent buttonHandler)
 {
   _interruptPin = interruptPin;
   _interruptHandler = interruptHandler;
@@ -66,115 +64,132 @@ void KeyboardMatrix::HandleInterrupt()
   }
 }
 
+#ifdef DEBUG
 void KeyboardMatrix::DumpRegisters()
 {
   // Write out all the configuration registers
   int registerState;
-  registerState = _keyMatrix->readRegister(TCA8418_REG_CFG);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_CFG);
   Serial.print("CFG: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_INT_STAT);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_INT_STAT);
   Serial.print("INT_STAT: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KEY_LCK_EC);
   Serial.print("LCK_EC: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_DAT_STAT_1);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_DAT_STAT_1);
   Serial.print("DAT_STAT_1: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_DAT_STAT_2);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_DAT_STAT_2);
   Serial.print("DAT_STAT_2: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_DAT_STAT_3);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_DAT_STAT_3);
   Serial.print("DAT_STAT_3: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_KP_GPIO_1);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_1);
   Serial.print("KP_GPIO_1: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_KP_GPIO_2);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_2);
   Serial.print("KP_GPIO_2: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_KP_GPIO_3);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_3);
   Serial.print("KP_GPIO_3: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPI_EM_1);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_1);
   Serial.print("GPI_EM_1: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPI_EM_2);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_2);
   Serial.print("GPI_EM_2: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPI_EM_3);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_3);
   Serial.print("GPI_EM_3: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_INT_LVL_1);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_LVL_1);
   Serial.print("INT_LVL_1: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_INT_LVL_2);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_LVL_2);
   Serial.print("INT_LVL_2: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_INT_LVL_3);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_LVL_3);
   Serial.print("INT_LVL_3: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_DEBOUNCE_DIS_1);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_DEBOUNCE_DIS_1);
   Serial.print("DEBOIUNCE_DIS_1: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_DEBOUNCE_DIS_2);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_DEBOUNCE_DIS_2);
   Serial.print("DEBOIUNCE_DIS_2: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_DEBOUNCE_DIS_3);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_DEBOUNCE_DIS_3);
   Serial.print("DEBOIUNCE_DIS_3: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_PULL_1);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_PULL_1);
   Serial.print("GPIO_PULL_1: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_PULL_2);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_PULL_2);
   Serial.print("GPIO_PULL_1: ");
   write8AsBits(registerState);
   Serial.println();
 
-  registerState = _keyMatrix->readRegister(TCA8418_REG_GPIO_PULL_3);
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_PULL_3);
   Serial.print("GPIO_PULL_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_1);
+  Serial.print("GPIO_INT_EN_1: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_2);
+  Serial.print("GPIO_INT_EN_2: ");
+  write8AsBits(registerState);
+  Serial.println();
+
+  registerState = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_3);
+  Serial.print("GPIO_INT_EN_3: ");
   write8AsBits(registerState);
   Serial.println();
 }
+#endif
 
 /**
  * @brief Initializes the keyboard matrix.
@@ -182,29 +197,45 @@ void KeyboardMatrix::DumpRegisters()
  */
 void KeyboardMatrix::Init()
 {
+#ifdef DEBUG
   delay(10000);
   Serial.println("Initializing keyboard matrix");
-  _keyMatrix = new Adafruit_TCA8418();
+#endif
 
   // Set up the matrix with the correct number of rows and columns.
-  _keyMatrix->begin(TCA8418_DEFAULT_ADDR, &Wire);
-  _keyMatrix->writeRegister(TCA8418_REG_KP_GPIO_1, 0b01111111); // Enable KP matrix for ROW0 through ROW6.
-  _keyMatrix->writeRegister(TCA8418_REG_KP_GPIO_2, 0b11111111); // Enable KP matrix for COL0 through COL7.
-  _keyMatrix->writeRegister(TCA8418_REG_KP_GPIO_3, 0b00000011); // Enable KP matrix for COL8 through COL9.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_1, 0b01111111); // Enable KP matrix for ROW0 through ROW6.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_2, 0b11111111); // Enable KP matrix for COL0 through COL7.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_KP_GPIO_3, 0b00000011); // Enable KP matrix for COL8 through COL9.
+
+  // Turn off all GPIO events so they don't get added to the FIFO queue
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_1, 0); // Disable interrupts for GPIO pins.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_2, 0); // Disable interrupts for GPIO pins.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPI_EM_3, 0); // Disable interrupts for GPIO pins.
+
+  // Disable all GPIO interrupts.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_1, 0); // Clear interrupts for GPIO pins.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_2, 0); // Clear interrupts for GPIO pins.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_GPIO_INT_EN_3, 0); // Clear interrupts for GPIO pins.
 
   // Attach the Arduino interrupt handler.
   pinMode(_interruptPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(_interruptPin), _interruptHandler, CHANGE);
 
-  // Flush any pending interrupts then enable interrupt sending
-  _keyMatrix->flush();
+  // Clear out any pending keys in the FIFO queue.
+  while (I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KEY_EVENT_A))
+  {
+  }
+  // Clear any pending interrupts.
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_INT_STAT, 3);
 
   // Enable key interrupts interrupts
-  uint8_t config = _keyMatrix->readRegister(TCA8418_REG_CFG);
+  uint8_t config = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_CFG);
   config |= TCA8418_REG_CFG_KE_IEN;
-  _keyMatrix->writeRegister(TCA8418_REG_CFG, config);
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_CFG, config);
 
+#ifdef DEBUG
   DumpRegisters();
+#endif
 
   _currentState = DetectionState::WaitingForKey;
 }
@@ -233,13 +264,6 @@ void KeyboardMatrix::ReadKeyEvent(int keyEvent)
   Serial.println(keyState);
 #endif
 
-  // Issue 31: For some reason the A key also sends a keyId 98 event.
-  if (keyId == 98)
-  {
-    Serial.println("Skipping 98");
-    return;
-  }
-
   // The CLR/DEL key is special. To support press-and-hold and match actual aircraft behaviour it should only send release events
   // This check ensures the press event fires for all other keys.
   if (keyId == CLR_KEY_ID)
@@ -267,7 +291,7 @@ void KeyboardMatrix::ProcessKeys()
   int keyEvent;
 
   // Step 1: Find out what caused the interrupt. Anything other than K_INT gets ignored.
-  int interruptStatus = _keyMatrix->readRegister(TCA8418_REG_INT_STAT);
+  int interruptStatus = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_INT_STAT);
   if ((interruptStatus && INT_STAT_K_INT_BIT) != INT_STAT_K_INT_BIT)
   {
     _currentState = DetectionState::WaitingForKey;
@@ -276,19 +300,16 @@ void KeyboardMatrix::ProcessKeys()
 
   // Step 2 in the data sheet, reading KEY_LCK_EC to get how many events
   // are stored doesn't seem necessary.
-  int eventCount = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC) & KEY_EVENT_COUNT_MASK;
-  Serial.print("Key event count: ");
-  Serial.println(eventCount);
 
   // Step 3: Read the pending keys in the FIFO queue. When this returns 0
   // there are no events left in the queue.
-  while (keyEvent = _keyMatrix->readRegister(TCA8418_REG_KEY_EVENT_A))
+  while (keyEvent = I2C::ReadRegister(TCA8418_ADDRESS, TCA8418_REG_KEY_EVENT_A))
   {
     ReadKeyEvent(keyEvent);
   }
 
   // Step 5: Reset the interrupt flag.
-  _keyMatrix->writeRegister(TCA8418_REG_INT_STAT, INT_STAT_K_INT_BIT);
+  I2C::WriteRegister(TCA8418_ADDRESS, TCA8418_REG_INT_STAT, INT_STAT_K_INT_BIT);
 
   // Set the state machine back to waiting for key.
   _currentState = DetectionState::WaitingForKey;

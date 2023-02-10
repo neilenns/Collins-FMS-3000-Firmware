@@ -2,7 +2,6 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_TCA8418.h>
 
 enum DetectionState
 {
@@ -31,13 +30,14 @@ private:
   uint8_t _interruptPin;
   unsigned long _lastPressEventTime;
 
-  Adafruit_TCA8418 *_keyMatrix;
-
+#ifdef DEBUG
   void DumpRegisters();
-  void ProcessKeys();
-  void ReadKeyEvent(int keyEvent);
+#endif
+
   void ProcessClrDel(ButtonState);
   void ProcessDim(ButtonState);
+  void ProcessKeys();
+  void ReadKeyEvent(int keyEvent);
 
 public:
   KeyboardMatrix(uint8_t interruptPin, KeyboardEvent interruptHandler, ButtonEvent buttonHandler);
