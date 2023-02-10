@@ -2,12 +2,15 @@
 #include <Wire.h>
 #include <Adafruit_TCA8418.h>
 
+#define DEBUG
+
 #include "KeyboardMatrix.h"
 
-static constexpr uint8_t INT_STAT_GPI_INT_BIT = 0x02;          // GPI_INT_BIT is bit 1 in the INT_STAT register.
-static constexpr uint8_t INT_STAT_K_INT_BIT = 0x01;            // K_INT is bit 0 in the INT_STAT register.
-static constexpr uint8_t KEY_STATE_MASK = 0x80;                // Bit 7 in the key event indicates whether the button was pressed or released.
-static constexpr uint8_t KEY_ID_MASK = 0x7F;                   // Bits 0-6 in the key event indicate which key was pressed.
+static constexpr uint8_t INT_STAT_GPI_INT_BIT = 0b00000010;    // GPI_INT_BIT is bit 1 in the INT_STAT register.
+static constexpr uint8_t INT_STAT_K_INT_BIT = 0b00000001;      // K_INT is bit 0 in the INT_STAT register.
+static constexpr uint8_t KEY_EVENT_COUNT_MASK = 0b000001111;   // Bits 0..3 in the KEY_LOCK_EC register are how many events are in the queue.
+static constexpr uint8_t KEY_STATE_MASK = 0b10000000;          // Bit 7 in the key event indicates whether the button was pressed or released.
+static constexpr uint8_t KEY_ID_MASK = 0b01111111;             // Bits 0-6 in the key event indicate which key was pressed.
 static constexpr uint8_t CLR_KEY_ID = 54;                      // Key ID for the special-cased CLR/DEL key.
 static constexpr uint8_t DEL_KEY_ID = 10;                      // Key ID for the virtual DEL key (CLR when long press).
 static constexpr uint8_t DIM_KEY_ID = 53;                      // Key ID for the special-cased DIM key.
@@ -159,10 +162,13 @@ void KeyboardMatrix::ProcessKeys()
 
   // Step 2 in the data sheet, reading KEY_LCK_EC to get how many events
   // are stored doesn't seem necessary.
+  int eventCount = _keyMatrix->readRegister(TCA8418_REG_KEY_LCK_EC) & KEY_EVENT_COUNT_MASK;
+  Serial.print("Key event count: ");
+  Serial.println(eventCount);
 
   // Step 3: Read the pending keys in the FIFO queue. When this returns 0
   // there are no events left in the queue.
-  while (keyEvent = _keyMatrix->getEvent())
+  while (keyEvent = _keyMatrix->readRegister(TCA8418_REG_KEY_EVENT_A))
   {
     ReadKeyEvent(keyEvent);
   }
