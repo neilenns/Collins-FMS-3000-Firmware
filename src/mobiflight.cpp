@@ -140,6 +140,16 @@ void OnButtonEvent(const uint8_t keyId, const ButtonState state)
     return;
   }
 
+<<<<<<< HEAD
+  if (keyId > ButtonNames::ButtonCount)
+    == == == =
+                 if (keyId >= ButtonNames::ButtonCount)
+>>>>>>> main
+    {
+      cmdMessenger.sendCmd(MFMessage::kStatus, F("Keypress isn't valid"));
+      return;
+    }
+
   // Send the button name and state to MobiFlight.
   cmdMessenger.sendCmdStart(MFMessage::kButtonChange);
   cmdMessenger.sendCmdArg(ButtonNames::Names[keyId - 1]); // The names array is origin 0 while the key IDs are origin 1.
