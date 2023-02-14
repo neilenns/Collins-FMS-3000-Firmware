@@ -134,7 +134,7 @@ void OnButtonEvent(const uint8_t keyId, const ButtonState state)
 {
   lastButtonPress = millis();
 
-  if (keyId >= ButtonNames::ButtonCount)
+  if (keyId > ButtonNames::ButtonCount)
   {
     cmdMessenger.sendCmd(MFMessage::kStatus, F("Keypress isn't valid"));
     return;
