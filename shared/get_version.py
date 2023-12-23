@@ -18,7 +18,8 @@ print(
 # Append the version to the build defines so it gets baked into the firmware
 env.Append(CPPDEFINES=[
     f'BUILD_VERSION={firmware_version}',
-    f'MOBIFLIGHT_NAME=FMS 3000 - {raw_board_number}'
+    f'MOBIFLIGHT_NAME=FMS 3000 - {board_position_name[board_number]}',
+    f'MOBIFLIGHT_TYPE=FMS 3000'
 ])
 
 # Set the output filename to the name of the board and the version
