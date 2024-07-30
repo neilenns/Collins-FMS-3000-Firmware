@@ -2,7 +2,7 @@
 
 This repository is a highly customized version of the [MobiFlight firmware](https://github.com/MobiFlight/MobiFlight-FirmwareSource) designed to work with the [Collins FMS 3000 PCB](https://github.com/neilenns/Collins-FMS-3000).
 
-The code is a good example of the minimal methods required for a board to get recognized by [MobiFlight](http://www.mobiflight.com/). It also demonstrates dynamically generating a list of connected devices (69 buttons and one "LED" for brightness control) without the need to store the configuration in EEPROM.
+The code is a good example of the minimal methods required for a board to get recognized by [MobiFlight](http://www.mobiflight.com/). It also demonstrates hardcoding a list of connected devices (69 buttons and one "LED" for brightness control) without the need to store the configuration in EEPROM.
 
 The 69 buttons are handled using TI TCA8418 keyboard driver. Backlight LEDs are managed using an [ISSI IS31FL3733B matrix LED driver](https://www.lumissil.com/assets/pdf/core/IS31FL3733B_DS.pdf) and features a startup animation with completion detection via interrupts.
 
