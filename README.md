@@ -4,7 +4,7 @@ This repository is a highly customized version of the [MobiFlight firmware](http
 
 The code is a good example of the minimal methods required for a board to get recognized by [MobiFlight](http://www.mobiflight.com/). It also demonstrates dynamically generating a list of connected devices (69 buttons and one "LED" for brightness control) without the need to store the configuration in EEPROM.
 
-The 69 buttons are handled using a 12x12 keyboard matrix with two MCP23107 providing row and column inputs. Keyboard scanning is interrupt driven using the technique described in Microchip's [AN1081 application note](https://ww1.microchip.com/downloads/en/AppNotes/01081a.pdf). Backlight LEDs are managed using an [ISSI IS31FL3733B matrix LED driver](https://www.lumissil.com/assets/pdf/core/IS31FL3733B_DS.pdf) and features a startup animation with completion detection via interrupts.
+The 69 buttons are handled using TI TCA8418 keyboard driver. Backlight LEDs are managed using an [ISSI IS31FL3733B matrix LED driver](https://www.lumissil.com/assets/pdf/core/IS31FL3733B_DS.pdf) and features a startup animation with completion detection via interrupts.
 
 ## Building the repository
 
